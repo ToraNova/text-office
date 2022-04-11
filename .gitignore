@@ -1,0 +1,20 @@
+# ignore compiled bytecode
+*.pyc
+__pycache__/
+
+# virtualenv
+lib64
+lib/*
+include/*
+bin/*
+
+dist/
+build/
+*.egg-info/
+
+test.docx
+draft.docx
+template.checklist.json
+dev.db
+uploads/*
+tmp/*
