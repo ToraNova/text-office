@@ -5,9 +5,63 @@ from docx.opc.constants import RELATIONSHIP_TYPE
 from docx.oxml.numbering import CT_Num, CT_Numbering
 from docx.enum.section import WD_SECTION, WD_ORIENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.base import XmlMappedEnumMember
 from docx.enum.dml import MSO_THEME_COLOR_INDEX
 from docx.shared import Pt, Inches, Cm, RGBColor
-from docx import Document
+from docx.styles.styles import Styles
+
+def format_run(run, bold=None, italic=None, underline=None, strike=None, color=None, size=None, name=None):
+    if bold is not None:
+        run.font.bold = bold
+    if italic is not None:
+        run.font.italic = italic
+    if underline is not None:
+        run.font.underline = underline
+    if strike is not None:
+        run.font.strike = strike
+    if color is not None:
+        run.font.color.rgb = color
+    if size is not None:
+        run.font.size = size
+    if name is not None:
+        run.font.name = name
+    return run
+
+def format_paragraph(para, style=None, align=None, spacing=None, before=None, after=None):
+    if style is not None:
+        para.style = style
+    if align is not None:
+        para.paragraph_format.alignment = align
+    if spacing is not None:
+        para.paragraph_format.line_spacing = spacing
+    if before is not None:
+        para.paragraph_format.space_before = before
+    if after is not None:
+        para.paragraph_format.space_after = after
+    return para
+
+def insert_hrule(paragraph, linestyle='single'):
+    p = paragraph._p  # p is the <w:p> XML element
+    pPr = p.get_or_add_pPr()
+    pBdr = OxmlElement('w:pBdr')
+    pPr.insert_element_before(pBdr,
+            'w:shd', 'w:tabs', 'w:suppressAutoHyphens', 'w:kinsoku', 'w:wordWrap',
+            'w:overflowPunct', 'w:topLinePunct', 'w:autoSpaceDE', 'w:autoSpaceDN',
+            'w:bidi', 'w:adjustRightInd', 'w:snapToGrid', 'w:spacing', 'w:ind',
+            'w:contextualSpacing', 'w:mirrorIndents', 'w:suppressOverlap', 'w:jc',
+            'w:textDirection', 'w:textAlignment', 'w:textboxTightWrap',
+            'w:outlineLvl', 'w:divId', 'w:cnfStyle', 'w:rPr', 'w:sectPr',
+            'w:pPrChange'
+            )
+    bottom = OxmlElement('w:bottom')
+    if linestyle == 'dashSmallGap':
+        bottom.set(qn('w:val'), 'dashSmallGap')
+    else:
+        bottom.set(qn('w:val'), 'single')
+    bottom.set(qn('w:sz'), '6')
+    bottom.set(qn('w:space'), '1')
+    bottom.set(qn('w:color'), 'auto')
+    pBdr.append(bottom)
 
 def change_orientation(doc, orient='portrait'):
     current_section = doc.sections[-1]
@@ -25,40 +79,6 @@ def delete_paragraph(paragraph):
     p = paragraph._element
     p.getparent().remove(p)
     p._p = p._element = None
-
-def format_run(run, bold=None, italic=None, underline=None, color=None, size=None, name=None):
-    if bold is not None:
-        run.bold = bold
-    if italic is not None:
-        run.italic = italic
-    if underline is not None:
-        run.underline = underline
-    if color is not None:
-        run.font.color.rgb = color
-    if size is not None:
-        run.font.size = size
-    if name is not None:
-        run.font.name = name
-    return run
-
-def add_text_run(para, text, bold=None, italic=None, underline=None, color=None, size=None, name=None):
-    run = para.add_run()
-    run.text = text
-    return format_run(run, bold, italic, underline, color, size, name)
-
-def format_paragraph(para, style=None, align=None, spacing=None, before=None, after=None):
-    if style is not None:
-        para.style = style
-    if align is not None:
-        para.paragraph_format.alignment = align
-    if spacing is not None:
-        para.paragraph_format.line_spacing = spacing
-    if before is not None:
-        para.paragraph_format.space_before = before
-    if after is not None:
-        para.paragraph_format.space_after = after
-    return para
-
 
 def restart_numbering(doc, para, abstract_numId):
     '''
@@ -112,28 +132,6 @@ def shade_cell(cell, rgbhex='111111'):
     cell._tc.get_or_add_tcPr().append(sh_elem)
 
 
-def insert_hrule(paragraph, linestyle='single'):
-    p = paragraph._p  # p is the <w:p> XML element
-    pPr = p.get_or_add_pPr()
-    pBdr = OxmlElement('w:pBdr')
-    pPr.insert_element_before(pBdr,
-            'w:shd', 'w:tabs', 'w:suppressAutoHyphens', 'w:kinsoku', 'w:wordWrap',
-            'w:overflowPunct', 'w:topLinePunct', 'w:autoSpaceDE', 'w:autoSpaceDN',
-            'w:bidi', 'w:adjustRightInd', 'w:snapToGrid', 'w:spacing', 'w:ind',
-            'w:contextualSpacing', 'w:mirrorIndents', 'w:suppressOverlap', 'w:jc',
-            'w:textDirection', 'w:textAlignment', 'w:textboxTightWrap',
-            'w:outlineLvl', 'w:divId', 'w:cnfStyle', 'w:rPr', 'w:sectPr',
-            'w:pPrChange'
-            )
-    bottom = OxmlElement('w:bottom')
-    if linestyle == 'dashSmallGap':
-        bottom.set(qn('w:val'), 'dashSmallGap')
-    else:
-        bottom.set(qn('w:val'), 'single')
-    bottom.set(qn('w:sz'), '6')
-    bottom.set(qn('w:space'), '1')
-    bottom.set(qn('w:color'), 'auto')
-    pBdr.append(bottom)
 
 
 def set_border(cell, **kwargs):
