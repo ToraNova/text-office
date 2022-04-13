@@ -26,3 +26,12 @@ multiple paragraphs **works** as <font Consolas>well</font>
 </align>
 
 <hr>
+<hr dashsmall>
+
+# basic table (no formatting)
+| Col1 | Col2 |
+| ---- | ---- |
+| abcd | efgh |
+| 1234 |  |
+| qwer | xxxxxxxxxxxxx |
+

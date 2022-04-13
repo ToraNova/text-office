@@ -1,9 +1,14 @@
 # special formatting tokens to ease report writing to md
 
+# https://github.com/miyuchina/mistletoe/blob/master/mistletoe/html_renderer.py
+
 import re
 import webcolors
 from mistletoe.span_token import SpanToken, RawText
 from mistletoe.block_token import BlockToken, tokenize
+
+def _build_regex_ftag_uni_pattern(tag):
+    return f'<{tag}\\s*([#0-9a-zA-Z]+)?>'
 
 def _build_regex_ftag_pattern(tag):
     return f'<{tag}\\s*([#0-9a-zA-Z]+)?>(.*?)</{tag}>'
@@ -11,7 +16,7 @@ def _build_regex_ftag_pattern(tag):
 def _build_regex_ftag_start_pattern(tag):
     return f'<{tag}\\s*([#0-9a-zA-Z]+)?[ >\n]'
 
-class FormatSpan(SpanToken):
+class FormatTag(SpanToken):
     parse_group = 2
 
     def __init__(self, match):
@@ -22,7 +27,7 @@ class FormatSpan(SpanToken):
         # do not define children ourselves, allow for nested formats
         #self.children = (RawText(match.group(2) if match.group(2) is not None else match.group(4)),)
 
-class ColorSpan(FormatSpan):
+class ColorTag(FormatTag):
     pattern = re.compile(_build_regex_ftag_pattern('c'), re.DOTALL)
 
     def __init__(self, match):
@@ -30,22 +35,27 @@ class ColorSpan(FormatSpan):
         if not self.format_value.startswith('#'):
             self.format_value = webcolors.name_to_hex(self.format_value)[1:]
 
-class BoldSpan(FormatSpan):
+class BoldTag(FormatTag):
     pattern = re.compile(_build_regex_ftag_pattern('b'), re.DOTALL)
 
-class ItalicSpan(FormatSpan):
+class ItalicTag(FormatTag):
     pattern = re.compile(_build_regex_ftag_pattern('i'), re.DOTALL)
 
-class UnderlineSpan(FormatSpan):
+class UnderlineTag(FormatTag):
     pattern = re.compile(_build_regex_ftag_pattern('u'), re.DOTALL)
 
-class StrikethroughSpan(FormatSpan):
+class StrikethroughTag(FormatTag):
     pattern = re.compile(_build_regex_ftag_pattern('strike'), re.DOTALL)
 
-class FontSpan(FormatSpan):
+class FontTag(FormatTag):
     pattern = re.compile(_build_regex_ftag_pattern('font'), re.DOTALL)
 
-class FormatBlock(BlockToken):
+class HorizontalRuleTag(FormatTag):
+    parse_group = 0
+    parse_inner = False
+    pattern = re.compile(_build_regex_ftag_uni_pattern('hr'))
+
+class FormatBlockTag(BlockToken):
 
     _end_cond = None
 
@@ -84,5 +94,5 @@ class FormatBlock(BlockToken):
                 break
         return line_buffer
 
-class AlignBlock(FormatBlock):
+class AlignBlockTag(FormatBlockTag):
     tag = 'align'

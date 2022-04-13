@@ -40,8 +40,17 @@ def format_paragraph(para, style=None, align=None, spacing=None, before=None, af
         para.paragraph_format.space_after = after
     return para
 
-def insert_hrule(paragraph, linestyle='single'):
-    p = paragraph._p  # p is the <w:p> XML element
+def format_table(table, style=None, align=None, autofit=None):
+    if style is not None:
+        table.style = style
+    if autofit is not None:
+        table.autofit = autofit
+    if align is not None:
+        table.alignment = align
+    return table
+
+def insert_hrule(para, linestyle='single'):
+    p = para._p  # p is the <w:p> XML element
     pPr = p.get_or_add_pPr()
     pBdr = OxmlElement('w:pBdr')
     pPr.insert_element_before(pBdr,
@@ -54,7 +63,7 @@ def insert_hrule(paragraph, linestyle='single'):
             'w:pPrChange'
             )
     bottom = OxmlElement('w:bottom')
-    if linestyle == 'dashSmallGap':
+    if linestyle == 'dashsmall':
         bottom.set(qn('w:val'), 'dashSmallGap')
     else:
         bottom.set(qn('w:val'), 'single')
@@ -62,6 +71,8 @@ def insert_hrule(paragraph, linestyle='single'):
     bottom.set(qn('w:space'), '1')
     bottom.set(qn('w:color'), 'auto')
     pBdr.append(bottom)
+
+# UNUSED-------------------------------------------------
 
 def change_orientation(doc, orient='portrait'):
     current_section = doc.sections[-1]

@@ -1,5 +1,5 @@
-# https://mistletoe-ebp.readthedocs.io/en/latest/using/develop.html?highlight=renderer#a-new-renderer
-# https://github.com/miyuchina/mistletoe/blob/master/mistletoe/html_renderer.py
+# renders a docx from markdown
+# using mistletoe for markdown parsing and python-docx for docx rendering
 
 import re
 
@@ -12,14 +12,17 @@ from docx.shared import RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
 
-from .docx_helper import format_paragraph, format_run
-from .format_tags import ColorSpan, BoldSpan, ItalicSpan, UnderlineSpan, StrikethroughSpan, FontSpan
-from .format_tags import AlignBlock
+from ..util.docx_helper import format_paragraph, format_run, format_table, insert_hrule
+from .format_tag import HorizontalRuleTag, ColorTag, BoldTag, ItalicTag, UnderlineTag, StrikethroughTag, FontTag, AlignBlockTag
 
 class Renderer(BaseRenderer):
     def __init__(self, out_path, docx_template=None, *extras):
         self._suppress_ptag_stack = [False]
-        super().__init__(*chain(([ColorSpan, BoldSpan, ItalicSpan, UnderlineSpan, StrikethroughSpan, FontSpan, AlignBlock]), extras))
+        super().__init__(*chain(([
+            HorizontalRuleTag,
+            ColorTag, BoldTag, ItalicTag, UnderlineTag, StrikethroughTag, FontTag,
+            AlignBlockTag
+        ]), extras))
         self.out_path = out_path
         self.docx_template = docx_template
 
@@ -45,15 +48,16 @@ class Renderer(BaseRenderer):
             self.docx = Document(self.docx_template)
 
         # paragraph and run stack
-        self.paras = []
         self.runs = []
+        self.paras = self.docx.paragraphs.copy()
+        self.tables = self.docx.tables.copy()
         self.render_inner(token)
 
         # save document
         self.docx.save(self.out_path)
 
     def populate_and_format_runs(self, token, **kwargs):
-        # format_span allows nested formatting <b><i>test</i></b>, italic and bold
+        # format_tag allows nested formatting <b><i>test</i></b>, italic and bold
         tos = len(self.runs) # top of stack
         self.render_inner(token)
         added = len(self.runs) - tos # new top of stack
@@ -69,31 +73,31 @@ class Renderer(BaseRenderer):
         for i in range(added):
             format_paragraph(self.paras[-(i+1)], **kwargs)
 
-    def render_color_span(self, token):
+    def render_color_tag(self, token):
         self.populate_and_format_runs(token, color=RGBColor.from_string(token.format_value))
 
-    def render_bold_span(self, token):
+    def render_bold_tag(self, token):
         self.populate_and_format_runs(token, bold=True)
 
     def render_strong(self, token):
         self.populate_and_format_runs(token, bold=True)
 
-    def render_italic_span(self, token):
+    def render_italic_tag(self, token):
         self.populate_and_format_runs(token, italic=True)
 
     def render_emphasis(self, token):
         self.populate_and_format_runs(token, italic=True)
 
-    def render_underline_span(self, token):
+    def render_underline_tag(self, token):
         self.populate_and_format_runs(token, underline=True)
 
-    def render_strikethrough_span(self, token):
+    def render_strikethrough_tag(self, token):
         self.populate_and_format_runs(token, strike=True)
 
     def render_strikethrough(self, token):
         self.populate_and_format_runs(token, strike=True)
 
-    def render_font_span(self, token):
+    def render_font_tag(self, token):
         self.populate_and_format_runs(token, name=token.format_value)
 
     def render_heading(self, token):
@@ -106,7 +110,7 @@ class Renderer(BaseRenderer):
         self.paras.append(self.docx.add_paragraph().clear())
         self.render_inner(token)
 
-    def render_align_block(self, token):
+    def render_align_block_tag(self, token):
         map = {
             'center': WD_ALIGN_PARAGRAPH.CENTER,
             'left': WD_ALIGN_PARAGRAPH.LEFT,
@@ -117,10 +121,35 @@ class Renderer(BaseRenderer):
             raise KeyError(f'no such alignment type: {token.format_value} (center, left, right, justify)')
         self.populate_and_format_paras(token, align=map[token.format_value])
 
-    #def render_align_block(self, token):
-    #    char_style_name = f'font_block:{token.format_value}'
-    #    if char_style_name not in self.docx.styles:
-    #        self.docx.add_style(char_style_name, WD_STYLE_TYPE.CHARACTER)
-    #    char_style_obj = self.docx.styles[char_style_name]
+    def render_horizontal_rule_tag(self, token):
+        insert_hrule(self.paras[-1], token.format_value)
 
-    #    self.populate_and_format_paras(token, style=)
+    def populate_table(self, token, **kwargs):
+        if len(token.children) < 1:
+            return
+        ncol = len(token.children[0].children)
+        self.tables.append(self.docx.add_table(0, ncol))
+
+        if hasattr(token, 'header') and token.header is not None:
+            token.header.is_header = True
+            self.render(token.header)
+
+        for row in token.children:
+            row.is_header = False
+            self.render(row)
+
+    def populate_row(self, token, **kwargs):
+        row = self.tables[-1].add_row()
+        for cidx, col in enumerate(token.children):
+            col.docx_cell = row.cells[cidx]
+            self.render(col)
+
+    def render_table(self, token):
+        self.populate_table(token)
+
+    def render_table_row(self, token):
+        self.populate_row(token)
+
+    def render_table_cell(self, token):
+        self.paras.append(token.docx_cell.paragraphs[0])
+        self.render_inner(token)
