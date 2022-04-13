@@ -12,8 +12,8 @@ dist/
 build/
 *.egg-info/
 
-test.docx
-draft.docx
+*.docx
+*.pdf
 template.checklist.json
 dev.db
 uploads/*
