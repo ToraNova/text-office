@@ -1,4 +1,4 @@
 lxml==4.8.0
--e git+ssh://git@github.com/ToraNova/mistletoe.git@ce8ac0a1e2fd7f8c03cb74cee29c71f21895dcd4#egg=mistletoe
+mistletoe==0.8.2
 python-docx==0.8.11
 webcolors==1.11.1
