@@ -19,53 +19,97 @@ md2report special tokens:
 <u>this is underlined</u>
 <strike>strikethrough</strike>
 <c blue><b><i><u>blue text in bold, underlined and italic</u></i></b></c>
-<font Arial>testing a different font</font>
+<name@font Arial>testing a different font</name@font>
+<size@font 20pt>testing a bigger font</size@font>
 
 <align center>
 all block/spans here should be aligned in the <strike>left</strike> center
 
-multiple paragraphs **works** as <font Consolas>well</font>
+multiple paragraphs **works** as <name@font Consolas>well</name@font>
 
 ### EVEN HEADINGS!
 
+TEST URL
+[hahah](https://google.com)
+
 </align>
 
-<para No Spacing>
+<style@para No Spacing>
 testing a paragraph style format, 'No Spacing' is a default style, let's now try a very long line blablabalabaaaaalalalalaallaalalalaaaaaaaaaaaaaaaaaaaaasdkajsdasddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddwkajwhdkajwhdkddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddakwdhawkdawd
 
 newline, note that this has no margin coz 'no spacing'? incoming pagebreak
-</para>
+</style@para>
 
-<pagebreak>
+<pgbr>
 
-# image test
+## numbering test
 
-absolute path image
-![13](file:///home/cjason/Pictures/fun/chad.jpg "TODO: caption for this image")
+1. one
+2. two
+3. three
 
-<pagebreak>
+1. one
+2. two
+3. three
+
+## image test
+
+absolute path image, default image width
+![altxt](file:///home/cjason/Pictures/fun/chad.jpg "TODO: caption for this image")
+
+these images has fixed width 10cm, with aspect ratio maintained
+<width@img 10cm>
+![](file:///home/cjason/Pictures/fun/chad.jpg "TODO: caption for this image")
+</width@img>
+
+<align center>
+<width@img 10cm>
+![](file:///home/cjason/Pictures/fun/doomer.jpg "TODO: caption for this image")
+</width@img>
+</align>
+
+
+<pgbr>
+
+## some horizontal rule
 
 <hr>
 <hr dashsmall>
 
-# basic table (no formatting)
+<pgbr>
 
+## basic table (no formatting)
+
+| Col1 | Col2 |
+| ---- | ---- |
+| abcd | efgh<br>newline? |
+| 1234 |  |
+| qwer | <c green>xxxxxxxxxxxxx</c> |
+| qwer | <font Arial><b>xxxxxxxxxxxxx</b></font> |
+| img | <width@img 50mm>![](file:///home/cjason/Pictures/fun/wojak.jpg)</width@img><br>test in newline |
+
+## table with style (Table Grid)
+
+<style@table Table Grid>
 | Col1 | Col2 |
 | ---- | ---- |
 | abcd | efgh |
 | 1234 |  |
 | qwer | <c green>xxxxxxxxxxxxx</c> |
 | qwer | <font Arial><b>xxxxxxxxxxxxx</b></font> |
+| img | <width@img 5cm>![](file:///home/cjason/Pictures/fun/wojak.jpg)</width@img><br>test in newline |
+</style@table>
 
-# table with style (Table Grid)
+## table with style and custom column width
 
-<table Table Grid>
-| Col1 | Col2 |
-| ---- | ---- |
-| abcd | efgh |
-| 1234 |  |
-| qwer | <c green>xxxxxxxxxxxxx</c> |
-| qwer | <font Arial><b>xxxxxxxxxxxxx</b></font> |
-</table>
-
-
+<style@table Table Grid>
+<width@table 5cm,8cm, 1cm>
+| Col1 | Col2 | Col3 |
+| ---- | ---- | --- |
+| abcd | efgh | abc
+| 1234 |  | |
+| qwer | <c green>xxxxxxxxxxxxx</c> | |
+| qwer | <font Arial><b>xxxxxxxxxxxxx</b></font> | |
+| img | <width@img 5cm>![](file:///home/cjason/Pictures/fun/wojak.jpg)</width@img><br>test in newline | |
+</width@table>
+</style@table>

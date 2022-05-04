@@ -14,7 +14,7 @@ def _build_regex_ftag_pattern(tag):
     return f'<{tag}\\s*((?:[#0-9a-zA-Z]+ ?)+)?>(.*?)</{tag}>'
 
 def _build_regex_ftag_start_pattern(tag):
-    return f'<{tag}\\s*((?:[#0-9a-zA-Z]+ ?)+)?[ >\n]'
+    return f'<{tag}\\s*((?:[#,0-9a-zA-Z]+ ?)+)?[ >\n]'
 
 class FormatTag(SpanToken):
     parse_group = 2
@@ -47,23 +47,29 @@ class UnderlineTag(FormatTag):
 class StrikethroughTag(FormatTag):
     pattern = re.compile(_build_regex_ftag_pattern('strike'), re.DOTALL)
 
-class FontTag(FormatTag):
-    pattern = re.compile(_build_regex_ftag_pattern('font'), re.DOTALL)
+class FontNameTag(FormatTag):
+    pattern = re.compile(_build_regex_ftag_pattern('name@font'), re.DOTALL)
+
+class FontSizeTag(FormatTag):
+    pattern = re.compile(_build_regex_ftag_pattern('size@font'), re.DOTALL)
+
+class ImageWidthTag(FormatTag):
+    pattern = re.compile(_build_regex_ftag_pattern('width@img'), re.DOTALL)
 
 class HorizontalRuleTag(FormatTag):
     parse_group = 0
     parse_inner = False
     pattern = re.compile(_build_regex_ftag_uni_pattern('hr'))
 
+class LineBreakTag(FormatTag):
+    parse_group = 0
+    parse_inner = False
+    pattern = re.compile(_build_regex_ftag_uni_pattern('br'))
+
 class PageBreakTag(FormatTag):
     parse_group = 0
     parse_inner = False
-    pattern = re.compile(_build_regex_ftag_uni_pattern('pagebreak'))
-
-class ImageTag(FormatTag):
-    parse_group = 0
-    parse_inner = False
-    pattern = re.compile(_build_regex_ftag_uni_pattern('img'))
+    pattern = re.compile(_build_regex_ftag_uni_pattern('pgbr'))
 
 class FormatBlockTag(BlockToken):
 
@@ -105,11 +111,15 @@ class FormatBlockTag(BlockToken):
                 break
         return line_buffer
 
+# stuff that require multiple lines with breaks in between (e.g., align multiple paragraphs, styling a multi-line table)
 class AlignBlockTag(FormatBlockTag):
     tag = 'align'
 
 class TableStyleBlockTag(FormatBlockTag):
-    tag = 'table'
+    tag = 'style@table'
 
 class ParagraphStyleBlockTag(FormatBlockTag):
-    tag = 'para'
+    tag = 'style@para'
+
+class TableWidthBlockTag(FormatBlockTag):
+    tag = 'width@table'

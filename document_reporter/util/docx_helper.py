@@ -1,3 +1,4 @@
+import re
 from docx.oxml.shared import OxmlElement
 from docx.oxml.ns import qn, nsdecls
 from docx.oxml import parse_xml, CT_P
@@ -7,7 +8,7 @@ from docx.enum.section import WD_SECTION, WD_ORIENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.base import XmlMappedEnumMember
 from docx.enum.dml import MSO_THEME_COLOR_INDEX
-from docx.shared import Pt, Inches, Cm, RGBColor
+from docx.shared import Pt, Inches, Cm, Mm, RGBColor
 from docx.styles.styles import Styles
 
 def format_run(run, bold=None, italic=None, underline=None, strike=None, color=None, size=None, name=None):
@@ -40,13 +41,20 @@ def format_paragraph(para, style=None, align=None, spacing=None, before=None, af
         para.paragraph_format.space_after = after
     return para
 
-def format_table(table, style=None, align=None, autofit=None):
+def format_table(table, style=None, align=None, autofit=None, colwidths=None):
     if style is not None:
         table.style = style
     if autofit is not None:
         table.autofit = autofit
     if align is not None:
         table.alignment = align
+    if colwidths is not None:
+        table.autofit = False
+        for r in table.rows:
+            for idx, cell in enumerate(r.cells):
+                if idx < len(colwidths):
+                    cell.width = colwidths[idx]
+
     return table
 
 def insert_hrule(para, linestyle='single'):
@@ -71,8 +79,55 @@ def insert_hrule(para, linestyle='single'):
     bottom.set(qn('w:space'), '1')
     bottom.set(qn('w:color'), 'auto')
     pBdr.append(bottom)
+    return pBdr
 
-# UNUSED-------------------------------------------------
+def parse_sizespec(sizespec):
+    try:
+        match = re.search('([0-9]+)([a-z]*)', sizespec)
+        rsval = float(match.group(1))
+        rstyp = match.group(2)
+
+        if rstyp == 'mm':
+            return Mm(rsval)
+        elif rstyp == 'pt':
+            return Pt(rsval)
+        elif rstyp == 'in':
+            return Inches(rsval)
+        else:
+            return Cm(rsval)
+    except Exception as e:
+        raise ValueError(f'unable to parse size spec: {sizespec}')
+
+def insert_hyperlink(para, txt, url):
+    # This gets access to the document.xml.rels file and gets a new relation id value
+    part = para.part
+    r_id = part.relate_to(url, RELATIONSHIP_TYPE.HYPERLINK, is_external=True)
+
+    # Create the w:hyperlink tag and add needed values
+    hyperlink = OxmlElement('w:hyperlink')
+    hyperlink.set(qn('r:id'), r_id, )
+
+    # Create a w:r element and a new w:rPr element
+    new_run = OxmlElement('w:r')
+    rPr = OxmlElement('w:rPr')
+
+    # Join all the xml elements together add add the required text to the w:r element
+    new_run.append(rPr)
+    new_run.text = txt
+    hyperlink.append(new_run)
+
+    # Create a new Run object and add the hyperlink into it
+    r = para.add_run()
+    r._r.append(hyperlink)
+
+    # A workaround for the lack of a hyperlink style (doesn't go purple after using the link)
+    # Delete this if using a template that has the hyperlink style in it
+    r.font.color.theme_color = MSO_THEME_COLOR_INDEX.HYPERLINK
+    #r.font.color.rgb = RGBColor(0x06, 0x45, 0xad)
+    r.font.underline = True
+    return hyperlink
+
+# NOT INCORPORATED INTO CORE YET-------------------------------------------------
 
 def change_orientation(doc, orient='portrait'):
     current_section = doc.sections[-1]
@@ -107,35 +162,6 @@ def restart_numbering(doc, para, abstract_numId):
     return num
 
 
-def add_hyperlink(paragraph, text, url):
-    # This gets access to the document.xml.rels file and gets a new relation id value
-    part = paragraph.part
-    r_id = part.relate_to(url, RELATIONSHIP_TYPE.HYPERLINK, is_external=True)
-
-    # Create the w:hyperlink tag and add needed values
-    hyperlink = OxmlElement('w:hyperlink')
-    hyperlink.set(qn('r:id'), r_id, )
-
-    # Create a w:r element and a new w:rPr element
-    new_run = OxmlElement('w:r')
-    rPr = OxmlElement('w:rPr')
-
-    # Join all the xml elements together add add the required text to the w:r element
-    new_run.append(rPr)
-    new_run.text = text
-    hyperlink.append(new_run)
-
-    # Create a new Run object and add the hyperlink into it
-    r = paragraph.add_run()
-    r._r.append(hyperlink)
-
-    # A workaround for the lack of a hyperlink style (doesn't go purple after using the link)
-    # Delete this if using a template that has the hyperlink style in it
-    #r.font.color.theme_color = MSO_THEME_COLOR_INDEX.HYPERLINK
-    r.font.color.rgb = RGBColor(0x06, 0x45, 0xad)
-    r.font.underline = True
-
-    return hyperlink
 
 
 def shade_cell(cell, rgbhex='111111'):

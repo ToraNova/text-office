@@ -9,12 +9,12 @@ from mistletoe import block_token, span_token
 from mistletoe.base_renderer import BaseRenderer
 
 from docx import Document
-from docx.shared import Pt, Inches, Cm, RGBColor
+from docx.shared import Pt, Inches, Cm, Mm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
 
-from ..util.docx_helper import format_paragraph, format_run, format_table, insert_hrule
-from .format_tag import HorizontalRuleTag, PageBreakTag, ImageTag, ColorTag, BoldTag, ItalicTag, UnderlineTag, StrikethroughTag, FontTag, AlignBlockTag, TableStyleBlockTag, ParagraphStyleBlockTag
+from ..util.docx_helper import format_paragraph, format_run, format_table, insert_hrule, insert_hyperlink, parse_sizespec
+from .format_tag import HorizontalRuleTag, LineBreakTag, PageBreakTag, ColorTag, BoldTag, ItalicTag, UnderlineTag, StrikethroughTag, FontNameTag, FontSizeTag, ImageWidthTag, AlignBlockTag, TableStyleBlockTag, TableWidthBlockTag, ParagraphStyleBlockTag
 
 class Renderer(BaseRenderer):
     def __init__(self, out_path, docx_template=None, rel_root=None, *extras):
@@ -24,9 +24,9 @@ class Renderer(BaseRenderer):
         '''
         self._suppress_ptag_stack = [False]
         super().__init__(*chain(([
-            HorizontalRuleTag, PageBreakTag, ImageTag,
-            ColorTag, BoldTag, ItalicTag, UnderlineTag, StrikethroughTag, FontTag,
-            AlignBlockTag, TableStyleBlockTag, ParagraphStyleBlockTag
+            HorizontalRuleTag, LineBreakTag, PageBreakTag,
+            ColorTag, BoldTag, ItalicTag, UnderlineTag, StrikethroughTag, FontNameTag, FontSizeTag, ImageWidthTag,
+            AlignBlockTag, TableStyleBlockTag, TableWidthBlockTag, ParagraphStyleBlockTag,
         ]), extras))
         self.out_path = out_path
         self.rel_root = rel_root
@@ -38,26 +38,38 @@ class Renderer(BaseRenderer):
         for c in token.children:
             self.render(c)
 
+    def render_list(self, token):
+        # https://github.com/miyuchina/mistletoe/blob/94022647cd9d80e242db5c93a6567e3155b468bc/mistletoe/block_token.py#L447
+        # TODO
+        print(token)
+
+    def render_list_item(self, token):
+        # TODO
+        pass
+
     def render_line_break(self, token):
         self.runs[-1].add_break()
 
-    def render_image(self, token):
+    def render_link(self, token):
+        # TODO: allow alt-txt in links, see mistletoe docs on parser issues (token.title is empty!)
+        insert_hyperlink(self.paras[-1], token.target, token.target)
 
-        print(token)
-        print(token.title)
-        print(token.src)
+    def render_image(self, token):
         up = urlparse(token.src)
         if up.scheme == 'file':
             if up.path.startswith('/'):
                 img_path = up.path
             else:
+                # TODO: fix
                 raise NotImplementedError('todo')
         else:
             raise NotImplementedError(f"unsupported image resource: {up.scheme}")
 
         self.runs.append(self.paras[-1].add_run())
-        # TODO: introduce way to alter width
-        self.runs[-1].add_picture(img_path, width=Cm(14))
+        self.inline_shapes.append(self.runs[-1].add_picture(img_path))
+
+    def render_image_tag(self, token):
+        up = urlparse(token.format_value_raw)
 
     def render_raw_text(self, token):
         # add run to last added paragraph
@@ -75,6 +87,7 @@ class Renderer(BaseRenderer):
         self.runs = []
         self.paras = self.docx.paragraphs.copy()
         self.tables = self.docx.tables.copy()
+        self.inline_shapes = []
         self.render_inner(token)
 
         # save document
@@ -105,6 +118,22 @@ class Renderer(BaseRenderer):
         for i in range(added):
             format_table(self.tables[-(i+1)], **kwargs)
 
+    def populate_and_resize_image(self, token, width, height=None):
+        tos = len(self.inline_shapes)
+        self.render_inner(token)
+        added = len(self.inline_shapes) - tos
+        for i in range(added):
+            target = self.inline_shapes[-(i+1)]
+            if height is not None:
+                target.height = height
+            else:
+                # maintain aspect ratio
+                sf = float(width) / float(target.width)
+                target.height = round(target.height * sf)
+
+            target.width = width
+
+
     def render_color_tag(self, token):
         self.populate_and_format_runs(token, color=RGBColor.from_string(token.format_value))
 
@@ -129,8 +158,12 @@ class Renderer(BaseRenderer):
     def render_strikethrough(self, token):
         self.populate_and_format_runs(token, strike=True)
 
-    def render_font_tag(self, token):
+    def render_font_name_tag(self, token):
         self.populate_and_format_runs(token, name=token.format_value)
+
+    def render_font_size_tag(self, token):
+        size = parse_sizespec(token.format_value)
+        self.populate_and_format_runs(token, size=size)
 
     def render_heading(self, token):
         # assume that heading has no additional child
@@ -156,8 +189,17 @@ class Renderer(BaseRenderer):
     def render_horizontal_rule_tag(self, token):
         insert_hrule(self.paras[-1], token.format_value)
 
+    def render_thematic_break(self, token):
+        insert_hrule(self.paras[-1])
+
     def render_page_break_tag(self, token):
         self.docx.add_page_break()
+
+    def render_line_break_tag(self, token):
+        #self.runs[-1].text += '\n'
+        if len(self.runs) < 1:
+            self.runs.append(self.paras[-1].add_run())
+        self.runs[-1].add_break()
 
     def populate_table(self, token, **kwargs):
         if len(token.children) < 1:
@@ -194,3 +236,14 @@ class Renderer(BaseRenderer):
 
     def render_paragraph_style_block_tag(self, token):
         self.populate_and_format_paras(token, style=token.format_value_raw)
+
+    def render_image_width_tag(self, token):
+        width = parse_sizespec(token.format_value)
+        self.populate_and_resize_image(token, width=width)
+
+    def render_table_width_block_tag(self, token):
+        colw_raw = token.format_value.split(',')
+        colw = []
+        for cr in colw_raw:
+            colw.append(parse_sizespec(cr.strip()))
+        self.populate_and_format_tables(token, colwidths=colw)
