@@ -1,6 +1,7 @@
 # renders a docx from markdown
 # using mistletoe for markdown parsing and python-docx for docx rendering
 
+import os
 import re
 from urllib.parse import urlparse
 
@@ -13,13 +14,13 @@ from docx.shared import Pt, Inches, Cm, Mm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
 
-from ..util.docx_helper import format_paragraph, format_run, format_table, insert_hrule, insert_hyperlink, parse_sizespec
+from ..util.docx_helper import format_paragraph, format_run, format_table, insert_hrule, insert_hyperlink, parse_sizespec, assign_numbering
 from .format_tag import HorizontalRuleTag, LineBreakTag, PageBreakTag, ColorTag, BoldTag, ItalicTag, UnderlineTag, StrikethroughTag, FontNameTag, FontSizeTag, ImageWidthTag, AlignBlockTag, TableStyleBlockTag, TableWidthBlockTag, ParagraphStyleBlockTag
 
 class Renderer(BaseRenderer):
-    def __init__(self, out_path, docx_template=None, rel_root=None, *extras):
+    def __init__(self, docx_template=None, rel_root=None, *extras):
         '''
-        renders a .docx on out_path, using docx_template as the template file
+        renders a .docx using docx_template as the template file
         rel_root determine the path to include relative path resources (e.g., images)
         '''
         self._suppress_ptag_stack = [False]
@@ -28,8 +29,7 @@ class Renderer(BaseRenderer):
             ColorTag, BoldTag, ItalicTag, UnderlineTag, StrikethroughTag, FontNameTag, FontSizeTag, ImageWidthTag,
             AlignBlockTag, TableStyleBlockTag, TableWidthBlockTag, ParagraphStyleBlockTag,
         ]), extras))
-        self.out_path = out_path
-        self.rel_root = rel_root
+        self.rel_root = os.getcwd() if rel_root is None else rel_root
         self.docx_template = docx_template
 
     def render_inner(self, token):
@@ -40,12 +40,47 @@ class Renderer(BaseRenderer):
 
     def render_list(self, token):
         # https://github.com/miyuchina/mistletoe/blob/94022647cd9d80e242db5c93a6567e3155b468bc/mistletoe/block_token.py#L447
-        # TODO
-        print(token)
+        ordered = token.start is not None
+        level = self.list_level
+        self.list_level += 1
+
+        # TODO: fix this abstract_numId map with a more robust implementation
+        anid_map = {
+                0: 7, # numId 5, absnumId 7
+                1: 3, # numId 6, absnumId 3
+                2: 2, # numId 7, absnumId 2
+        }
+
+        if ordered:
+            stpl = 'List Number '
+        else:
+            stpl = 'List Bullet '
+
+        if level > 0:
+            stpl += str(level+1)
+        style = stpl.strip()
+
+        for idx, c in enumerate(token.children):
+            number = token.start + idx if ordered else None
+            # if mistletoe changed the way leader/prepend is computed, this must changed as well
+
+            tos = len(self.paras)
+            for ic in c.children:
+                ic.docx_style = style
+                self.render(ic)
+            #self.populate_and_format_paras(c, style=style)
+
+            added = len(self.paras) - tos
+            #if added > 0 and ordered:
+            if added > 0 and ordered and idx == 0:
+                assign_numbering(self.docx, self.paras[tos], anid_map[level], number)
+
+        self.list_level -= 1
 
     def render_list_item(self, token):
-        # TODO
-        pass
+        # handled by list
+        #self.render_inner(token)
+        raise NotImplementedError("list_item is handled by list rendering")
 
     def render_line_break(self, token):
         self.runs[-1].add_break()
@@ -55,15 +90,10 @@ class Renderer(BaseRenderer):
         insert_hyperlink(self.paras[-1], token.target, token.target)
 
     def render_image(self, token):
-        up = urlparse(token.src)
-        if up.scheme == 'file':
-            if up.path.startswith('/'):
-                img_path = up.path
-            else:
-                # TODO: fix
-                raise NotImplementedError('todo')
+        if token.src.startswith('/'):
+            img_path = token.src
         else:
-            raise NotImplementedError(f"unsupported image resource: {up.scheme}")
+            img_path = os.path.join(self.rel_root, token.src)
 
         self.runs.append(self.paras[-1].add_run())
         self.inline_shapes.append(self.runs[-1].add_picture(img_path))
@@ -84,6 +114,7 @@ class Renderer(BaseRenderer):
             self.docx = Document(self.docx_template)
 
         # paragraph and run stack
+        self.list_level = 0 # default root level
         self.runs = []
         self.paras = self.docx.paragraphs.copy()
         self.tables = self.docx.tables.copy()
@@ -91,7 +122,8 @@ class Renderer(BaseRenderer):
         self.render_inner(token)
 
         # save document
-        self.docx.save(self.out_path)
+        #self.docx.save(self.out_path)
+        return self.docx
 
     def populate_and_format_runs(self, token, **kwargs):
         # format_tag allows nested formatting <b><i>test</i></b>, italic and bold
@@ -172,7 +204,10 @@ class Renderer(BaseRenderer):
 
     def render_paragraph(self, token):
         # for all span tokens
-        self.paras.append(self.docx.add_paragraph().clear())
+        if hasattr(token, 'docx_style') and isinstance(token.docx_style, str):
+            self.paras.append(self.docx.add_paragraph(style=token.docx_style).clear())
+        else:
+            self.paras.append(self.docx.add_paragraph().clear())
         self.render_inner(token)
 
     def render_align_block_tag(self, token):

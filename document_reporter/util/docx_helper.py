@@ -127,6 +127,30 @@ def insert_hyperlink(para, txt, url):
     r.font.underline = True
     return hyperlink
 
+def assign_numbering(doc, para, anid, start=1, tierlvl=0):
+    '''
+    how to find abstract_numId (anid), open the .docx and find nav to word/document.xml
+    search the relevant keyword in the list that we want to restart (i.e. ListBullet)
+    open word/styles.xml and search for the style (ListBullet), look for numId value
+    open word/numbering.xml and search the numId="x" value, get abstractNumId value
+    '''
+    ctn = doc.part.numbering_part.numbering_definitions._numbering
+    nxtnid = ctn._next_numId
+    num = CT_Num.new(nxtnid, anid)
+    num.add_lvlOverride(ilvl=tierlvl).add_startOverride(start)
+    ctn._insert_num(num)
+    para._p.get_or_add_pPr().get_or_add_numPr().get_or_add_numId().val = nxtnid
+    return nxtnid
+
+def delete_paragraph(para):
+    p = para._element
+    p.getparent().remove(p)
+    p._p = p._element = None
+
+def shade_cell(cell, rgbhex='111111'):
+    sh_elem = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), rgbhex))
+    cell._tc.get_or_add_tcPr().append(sh_elem)
+
 # NOT INCORPORATED INTO CORE YET-------------------------------------------------
 
 def change_orientation(doc, orient='portrait'):
@@ -140,36 +164,6 @@ def change_orientation(doc, orient='portrait'):
     new_section.page_width = new_width
     new_section.page_height = new_height
     return new_section
-
-def delete_paragraph(paragraph):
-    p = paragraph._element
-    p.getparent().remove(p)
-    p._p = p._element = None
-
-def restart_numbering(doc, para, abstract_numId):
-    '''
-    how to find abstract_numId, open the .docx and find nav to word/document.xml
-    search the relevant keyword in the list that we want to restart (i.e. ListBullet)
-    open word/styles.xml and search for the style (ListBullet), look for numId value
-    open word/numbering.xml and search the numId="x" value, get abstractNumId value
-    '''
-    ctn = doc.part.numbering_part.numbering_definitions._numbering
-    nxtnid = ctn._next_numId
-    num = CT_Num.new(nxtnid, abstract_numId)
-    num.add_lvlOverride(ilvl=0).add_startOverride(1)
-    ctn._insert_num(num)
-    para._p.get_or_add_pPr().get_or_add_numPr().get_or_add_numId().val = nxtnid
-    return num
-
-
-
-
-def shade_cell(cell, rgbhex='111111'):
-    sh_elem = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), rgbhex))
-    cell._tc.get_or_add_tcPr().append(sh_elem)
-
-
-
 
 def set_border(cell, **kwargs):
     """

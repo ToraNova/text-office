@@ -47,24 +47,73 @@ newline, note that this has no margin coz 'no spacing'? incoming pagebreak
 1. one
 2. two
 3. three
+4. four
+5. five
+6. six
+7. seven
+8. eight
+9. nine
+    1. one
+    2. two
+        1. one
+        2. two
+10. ten
+    - test
+    - test2
+11. eleven
+    1. one
+    2. two
+        1. one
+        2. two
+12. twelve
 
+another list, numbering should restart
+
+<align center>
 1. one
 2. two
 3. three
+  1. one
+  2. two
+</align>
+
+## unordered list
+
+- the first
+- the second
+- the third
+- the fourth
+  - another
+  - another 2
+
+ul don't reset, duh
+
+- the first
+- the second
+  - another
 
 ## image test
 
 absolute path image, default image width
-![altxt](file:///home/cjason/Pictures/fun/chad.jpg "TODO: caption for this image")
+![altxt](/home/cjason/Pictures/fun/chad.jpg "TODO: caption for this image")
 
 these images has fixed width 10cm, with aspect ratio maintained
 <width@img 10cm>
-![](file:///home/cjason/Pictures/fun/chad.jpg "TODO: caption for this image")
+![](/home/cjason/Pictures/fun/chad.jpg "TODO: caption for this image")
 </width@img>
 
 <align center>
 <width@img 10cm>
-![](file:///home/cjason/Pictures/fun/doomer.jpg "TODO: caption for this image")
+![](/home/cjason/Pictures/fun/doomer.jpg "TODO: caption for this image")
+</width@img>
+</align>
+
+<align center>
+1. <width@img 5cm>
+![](/home/cjason/Pictures/fun/golden_ticket.png "TODO: caption for this image")
+</width@img>
+2. <width@img 5cm>
+![](samples/teh_tarik.png)
 </width@img>
 </align>
 
@@ -86,7 +135,7 @@ these images has fixed width 10cm, with aspect ratio maintained
 | 1234 |  |
 | qwer | <c green>xxxxxxxxxxxxx</c> |
 | qwer | <font Arial><b>xxxxxxxxxxxxx</b></font> |
-| img | <width@img 50mm>![](file:///home/cjason/Pictures/fun/wojak.jpg)</width@img><br>test in newline |
+| img | <width@img 50mm>![](/home/cjason/Pictures/fun/wojak.jpg)</width@img><br>test in newline |
 
 ## table with style (Table Grid)
 
@@ -97,7 +146,7 @@ these images has fixed width 10cm, with aspect ratio maintained
 | 1234 |  |
 | qwer | <c green>xxxxxxxxxxxxx</c> |
 | qwer | <font Arial><b>xxxxxxxxxxxxx</b></font> |
-| img | <width@img 5cm>![](file:///home/cjason/Pictures/fun/wojak.jpg)</width@img><br>test in newline |
+| img | <width@img 5cm>![](/home/cjason/Pictures/fun/wojak.jpg)</width@img><br>test in newline |
 </style@table>
 
 ## table with style and custom column width
@@ -110,6 +159,6 @@ these images has fixed width 10cm, with aspect ratio maintained
 | 1234 |  | |
 | qwer | <c green>xxxxxxxxxxxxx</c> | |
 | qwer | <font Arial><b>xxxxxxxxxxxxx</b></font> | |
-| img | <width@img 5cm>![](file:///home/cjason/Pictures/fun/wojak.jpg)</width@img><br>test in newline | |
+| img | <width@img 5cm>![](/home/cjason/Pictures/fun/wojak.jpg)</width@img><br>test in newline | |
 </width@table>
 </style@table>
