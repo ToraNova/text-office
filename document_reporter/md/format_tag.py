@@ -8,13 +8,13 @@ from mistletoe.span_token import SpanToken, RawText
 from mistletoe.block_token import BlockToken, tokenize
 
 def _build_regex_ftag_uni_pattern(tag):
-    return f'<{tag}\\s*((?:[\\-\\=?_./:#0-9a-zA-Z]+ ?)+)?>'
+    return f'<{tag}\\s*((?:[\\-\\=?_.,/:#0-9a-zA-Z]+ ?)+)?>'
 
 def _build_regex_ftag_pattern(tag):
-    return f'<{tag}\\s*((?:[#0-9a-zA-Z]+ ?)+)?>(.*?)</{tag}>'
+    return f'<{tag}\\s*((?:[\\-\\=?_.,/:#0-9a-zA-Z]+ ?)+)?>(.*?)</{tag}>'
 
 def _build_regex_ftag_start_pattern(tag):
-    return f'<{tag}\\s*((?:[#,0-9a-zA-Z]+ ?)+)?[ >\n]'
+    return f'<{tag}\\s*((?:[\\-\\=?_.,/:#0-9a-zA-Z]+ ?)+)?[ >\n]'
 
 class FormatTag(SpanToken):
     parse_group = 2
@@ -56,6 +56,9 @@ class FontSizeTag(FormatTag):
 class ImageWidthTag(FormatTag):
     pattern = re.compile(_build_regex_ftag_pattern('width@img'), re.DOTALL)
 
+class TableCellColorTag(FormatTag):
+    pattern = re.compile(_build_regex_ftag_pattern('color@cell'), re.DOTALL)
+
 class HorizontalRuleTag(FormatTag):
     parse_group = 0
     parse_inner = False
@@ -78,7 +81,8 @@ class FormatBlockTag(BlockToken):
     def __init__(self, lines):
         start_token = re.search(_build_regex_ftag_start_pattern(self.tag), lines[0])
         self.format_value_raw = start_token.group(1)
-        self.format_value = self.format_value_raw.casefold()
+        if self.format_value_raw is not None:
+            self.format_value = self.format_value_raw.casefold()
         lines[0] = lines[0][start_token.span()[1]:]
         end_token =re.search(f'</{self.tag}>', lines[-1])
         lines[-1] = lines[-1][:end_token.span()[0]]
@@ -111,6 +115,21 @@ class FormatBlockTag(BlockToken):
                 break
         return line_buffer
 
+class FormatKeyValueBlockTag(FormatBlockTag):
+    def __init__(self, lines):
+        super().__init__(lines)
+        fkv_list = self.format_value_raw.split(',')
+        self.format = {}
+        for kv_pair in fkv_list:
+            _wl = kv_pair.strip().split('=')
+            if len(_wl) < 2:
+                continue
+            self.format[_wl[0].strip().casefold()] = _wl[1].strip()
+
+# comment block
+class CommentBlockTag(FormatBlockTag):
+    tag = 'comment'
+
 # stuff that require multiple lines with breaks in between (e.g., align multiple paragraphs, styling a multi-line table)
 class AlignBlockTag(FormatBlockTag):
     tag = 'align'
@@ -123,3 +142,6 @@ class ParagraphStyleBlockTag(FormatBlockTag):
 
 class TableWidthBlockTag(FormatBlockTag):
     tag = 'width@table'
+
+class ParagraphFormatBlockTag(FormatKeyValueBlockTag):
+    tag = 'format@para'

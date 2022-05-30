@@ -102,11 +102,7 @@ these images has fixed width 10cm, with aspect ratio maintained
 ![](/home/cjason/Pictures/fun/chad.jpg "TODO: caption for this image")
 </width@img>
 
-<align center>
-<width@img 10cm>
-![](/home/cjason/Pictures/fun/doomer.jpg "TODO: caption for this image")
-</width@img>
-</align>
+<align center><width@img 10cm>![](/home/cjason/Pictures/fun/doomer.jpg "TODO: caption for this image")</width@img></align>
 
 <align center>
 1. <width@img 5cm>
@@ -134,7 +130,7 @@ these images has fixed width 10cm, with aspect ratio maintained
 | abcd | efgh<br>newline? |
 | 1234 |  |
 | qwer | <c green>xxxxxxxxxxxxx</c> |
-| qwer | <font Arial><b>xxxxxxxxxxxxx</b></font> |
+| qwer | <name@font Arial><b>xxxxxxxxxxxxx</b></name@font> |
 | img | <width@img 50mm>![](/home/cjason/Pictures/fun/wojak.jpg)</width@img><br>test in newline |
 
 ## table with style (Table Grid)
@@ -145,7 +141,7 @@ these images has fixed width 10cm, with aspect ratio maintained
 | abcd | efgh |
 | 1234 |  |
 | qwer | <c green>xxxxxxxxxxxxx</c> |
-| qwer | <font Arial><b>xxxxxxxxxxxxx</b></font> |
+| qwer | <name@font Arial><b>xxxxxxxxxxxxx</b></name@font> |
 | img | <width@img 5cm>![](/home/cjason/Pictures/fun/wojak.jpg)</width@img><br>test in newline |
 </style@table>
 
@@ -158,7 +154,7 @@ these images has fixed width 10cm, with aspect ratio maintained
 | abcd | efgh | abc
 | 1234 |  | |
 | qwer | <c green>xxxxxxxxxxxxx</c> | |
-| qwer | <font Arial><b>xxxxxxxxxxxxx</b></font> | |
+| qwer | <name@font Arial><b>xxxxxxxxxxxxx</b></name@font> | |
 | img | <width@img 5cm>![](/home/cjason/Pictures/fun/wojak.jpg)</width@img><br>test in newline | |
 </width@table>
 </style@table>

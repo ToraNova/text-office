@@ -83,7 +83,7 @@ def insert_hrule(para, linestyle='single'):
 
 def parse_sizespec(sizespec):
     try:
-        match = re.search('([0-9]+)([a-z]*)', sizespec)
+        match = re.search('([0-9.]+)([a-z]*)', sizespec)
         rsval = float(match.group(1))
         rstyp = match.group(2)
 
@@ -93,8 +93,10 @@ def parse_sizespec(sizespec):
             return Pt(rsval)
         elif rstyp == 'in':
             return Inches(rsval)
-        else:
+        elif rstyp == 'cm':
             return Cm(rsval)
+        else:
+            return rsval
     except Exception as e:
         raise ValueError(f'unable to parse size spec: {sizespec}')
 
@@ -141,6 +143,40 @@ def assign_numbering(doc, para, anid, start=1, tierlvl=0):
     ctn._insert_num(num)
     para._p.get_or_add_pPr().get_or_add_numPr().get_or_add_numId().val = nxtnid
     return nxtnid
+
+def make_figure_caption(run, include_heading=0):
+    '''
+    make the run a reference caption. set include_heading=1 to do smth like
+    Figure x-y, where the x is the heading numbering to follow, and y the n-th figure under heading x
+    '''
+    r = run._r
+
+    _strseq = f' SEQ Figure \\* ARABIC '
+    if isinstance(include_heading, int) and include_heading > 0:
+        fldChar = OxmlElement('w:fldChar')
+        fldChar.set(qn('w:fldCharType'), 'begin')
+        r.append(fldChar)
+        instrText = OxmlElement('w:instrText')
+        instrText.text = f' STYLEREF {include_heading} \s '
+        r.append(instrText)
+        fldChar = OxmlElement('w:fldChar')
+        fldChar.set(qn('w:fldCharType'), 'end')
+        r.append(fldChar)
+
+        nbh = OxmlElement('w:noBreakHyphen')
+        r.append(nbh)
+
+        _strseq = f' SEQ Figure \\* ARABIC \s {include_heading}'
+
+    fldChar = OxmlElement('w:fldChar')
+    fldChar.set(qn('w:fldCharType'), 'begin')
+    r.append(fldChar)
+    instrText = OxmlElement('w:instrText')
+    instrText.text = _strseq
+    r.append(instrText)
+    fldChar = OxmlElement('w:fldChar')
+    fldChar.set(qn('w:fldCharType'), 'end')
+    r.append(fldChar)
 
 def delete_paragraph(para):
     p = para._element

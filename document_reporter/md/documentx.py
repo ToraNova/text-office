@@ -14,8 +14,8 @@ from docx.shared import Pt, Inches, Cm, Mm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
 
-from ..util.docx_helper import format_paragraph, format_run, format_table, insert_hrule, insert_hyperlink, parse_sizespec, assign_numbering
-from .format_tag import HorizontalRuleTag, LineBreakTag, PageBreakTag, ColorTag, BoldTag, ItalicTag, UnderlineTag, StrikethroughTag, FontNameTag, FontSizeTag, ImageWidthTag, AlignBlockTag, TableStyleBlockTag, TableWidthBlockTag, ParagraphStyleBlockTag
+from ..util.docx_helper import format_paragraph, format_run, format_table, insert_hrule, insert_hyperlink, parse_sizespec, assign_numbering, make_figure_caption, shade_cell
+from .format_tag import HorizontalRuleTag, LineBreakTag, PageBreakTag, ColorTag, BoldTag, ItalicTag, UnderlineTag, StrikethroughTag, FontNameTag, FontSizeTag, ImageWidthTag, TableCellColorTag, AlignBlockTag, TableStyleBlockTag, TableWidthBlockTag, ParagraphStyleBlockTag, ParagraphFormatBlockTag, CommentBlockTag
 
 class Renderer(BaseRenderer):
     def __init__(self, docx_template=None, rel_root=None, *extras):
@@ -26,8 +26,8 @@ class Renderer(BaseRenderer):
         self._suppress_ptag_stack = [False]
         super().__init__(*chain(([
             HorizontalRuleTag, LineBreakTag, PageBreakTag,
-            ColorTag, BoldTag, ItalicTag, UnderlineTag, StrikethroughTag, FontNameTag, FontSizeTag, ImageWidthTag,
-            AlignBlockTag, TableStyleBlockTag, TableWidthBlockTag, ParagraphStyleBlockTag,
+            ColorTag, BoldTag, ItalicTag, UnderlineTag, StrikethroughTag, FontNameTag, FontSizeTag, ImageWidthTag, TableCellColorTag,
+            AlignBlockTag, TableStyleBlockTag, TableWidthBlockTag, ParagraphStyleBlockTag, ParagraphFormatBlockTag, CommentBlockTag
         ]), extras))
         self.rel_root = os.getcwd() if rel_root is None else rel_root
         self.docx_template = docx_template
@@ -98,6 +98,22 @@ class Renderer(BaseRenderer):
         self.runs.append(self.paras[-1].add_run())
         self.inline_shapes.append(self.runs[-1].add_picture(img_path))
 
+        # skip caption if no caption string
+        if len(token.title.strip()) < 1:
+            return
+
+        tcpar = self.docx.add_paragraph(style='Caption').clear()
+        format_paragraph(tcpar, align=WD_ALIGN_PARAGRAPH.CENTER)
+        #_hdguse = 1 # use hdg lvl 1 count as index
+        #if _hdguse not in self.hdg_count:
+        #    predot_num = ''
+        #else:
+        #    predot_num = f'{self.hdg_count[_hdguse]}-'
+        #make_figure_caption(tcpar.add_run(f'Figure {predot_num}'))
+        # TODO: allow user to choose whether to include heading
+        make_figure_caption(tcpar.add_run(f'Figure '), 1)
+        tcrun = tcpar.add_run(f': {token.title}')
+
     def render_image_tag(self, token):
         up = urlparse(token.format_value_raw)
 
@@ -118,6 +134,8 @@ class Renderer(BaseRenderer):
         self.runs = []
         self.paras = self.docx.paragraphs.copy()
         self.tables = self.docx.tables.copy()
+        self.hdg_count = {} # for heading number in caption use
+        self.cells = []
         self.inline_shapes = []
         self.render_inner(token)
 
@@ -165,7 +183,6 @@ class Renderer(BaseRenderer):
 
             target.width = width
 
-
     def render_color_tag(self, token):
         self.populate_and_format_runs(token, color=RGBColor.from_string(token.format_value))
 
@@ -199,6 +216,10 @@ class Renderer(BaseRenderer):
 
     def render_heading(self, token):
         # assume that heading has no additional child
+        if token.level not in self.hdg_count:
+            self.hdg_count[token.level] = 1
+        else:
+            self.hdg_count[token.level] += 1
         self.paras.append(self.docx.add_heading(level=token.level).clear())
         self.render_inner(token)
 
@@ -236,7 +257,7 @@ class Renderer(BaseRenderer):
             self.runs.append(self.paras[-1].add_run())
         self.runs[-1].add_break()
 
-    def populate_table(self, token, **kwargs):
+    def render_table(self, token):
         if len(token.children) < 1:
             return
         ncol = len(token.children[0].children)
@@ -250,31 +271,29 @@ class Renderer(BaseRenderer):
             row.is_header = False
             self.render(row)
 
-    def populate_row(self, token, **kwargs):
+    def render_table_row(self, token):
         row = self.tables[-1].add_row()
         for cidx, col in enumerate(token.children):
-            col.docx_cell = row.cells[cidx]
+            self.cells.append(row.cells[cidx])
             self.render(col)
 
-    def render_table(self, token):
-        self.populate_table(token)
-
-    def render_table_row(self, token):
-        self.populate_row(token)
-
     def render_table_cell(self, token):
-        self.paras.append(token.docx_cell.paragraphs[0])
+        self.paras.append(self.cells[-1].paragraphs[0])
         self.render_inner(token)
-
-    def render_table_style_block_tag(self, token):
-        self.populate_and_format_tables(token, style=token.format_value_raw)
-
-    def render_paragraph_style_block_tag(self, token):
-        self.populate_and_format_paras(token, style=token.format_value_raw)
 
     def render_image_width_tag(self, token):
         width = parse_sizespec(token.format_value)
         self.populate_and_resize_image(token, width=width)
+
+    def render_table_cell_color_tag(self, token):
+        if len(self.cells) < 1:
+            return
+        color_raw = token.format_value.strip('#')
+        shade_cell(self.cells[-1], color_raw)
+        self.render_inner(token)
+
+    def render_table_style_block_tag(self, token):
+        self.populate_and_format_tables(token, style=token.format_value_raw)
 
     def render_table_width_block_tag(self, token):
         colw_raw = token.format_value.split(',')
@@ -282,3 +301,16 @@ class Renderer(BaseRenderer):
         for cr in colw_raw:
             colw.append(parse_sizespec(cr.strip()))
         self.populate_and_format_tables(token, colwidths=colw)
+
+    def render_paragraph_style_block_tag(self, token):
+        self.populate_and_format_paras(token, style=token.format_value_raw)
+
+    def render_paragraph_format_block_tag(self, token):
+        _spacing = parse_sizespec(token.format['spacing']) if 'spacing' in token.format else None
+        _before = parse_sizespec(token.format['before']) if 'before' in token.format else None
+        _after = parse_sizespec(token.format['after']) if 'after' in token.format else None
+        self.populate_and_format_paras(token, spacing=_spacing, before=_before, after=_after)
+
+    def render_comment_block_tag(self, token):
+        # do nothing
+        pass
