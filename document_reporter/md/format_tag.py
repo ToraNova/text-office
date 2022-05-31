@@ -8,13 +8,25 @@ from mistletoe.span_token import SpanToken, RawText
 from mistletoe.block_token import BlockToken, tokenize
 
 def _build_regex_ftag_uni_pattern(tag):
-    return f'<{tag}\\s*((?:[\\-\\=?_.,/:#0-9a-zA-Z]+ ?)+)?>'
+    return f'<{tag}\\s*((?:[\\-\\=?_.,/:;#0-9a-zA-Z]+ ?)+)?>'
 
 def _build_regex_ftag_pattern(tag):
-    return f'<{tag}\\s*((?:[\\-\\=?_.,/:#0-9a-zA-Z]+ ?)+)?>(.*?)</{tag}>'
+    return f'<{tag}\\s*((?:[\\-\\=?_.,/:;#0-9a-zA-Z]+ ?)+)?>(.*?)</{tag}>'
 
 def _build_regex_ftag_start_pattern(tag):
-    return f'<{tag}\\s*((?:[\\-\\=?_.,/:#0-9a-zA-Z]+ ?)+)?[ >\n]'
+    return f'<{tag}\\s*((?:[\\-\\=?_.,/:;#0-9a-zA-Z]+ ?)+)?[ >\n]'
+
+class KeyValueMixin:
+
+    def parse_format(self):
+        fkv_list = self.format_value_raw.split(',')
+        self.format = {}
+        for kv_pair in fkv_list:
+            _wl = kv_pair.strip().split('=')
+            if len(_wl) < 2:
+                continue
+            self.format[_wl[0].strip().casefold()] = _wl[1].strip()
+
 
 class FormatTag(SpanToken):
     parse_group = 2
@@ -26,6 +38,13 @@ class FormatTag(SpanToken):
             self.format_value = self.format_value_raw.casefold()
         # do not define children ourselves, allow for nested formats
         #self.children = (RawText(match.group(2) if match.group(2) is not None else match.group(4)),)
+
+class KeyValueFormatTag(KeyValueMixin, FormatTag):
+
+    def __init__(self, match):
+        super().__init__(match)
+        self.parse_format()
+
 
 class ColorTag(FormatTag):
     pattern = re.compile(_build_regex_ftag_pattern('c'), re.DOTALL)
@@ -44,20 +63,23 @@ class ItalicTag(FormatTag):
 class UnderlineTag(FormatTag):
     pattern = re.compile(_build_regex_ftag_pattern('u'), re.DOTALL)
 
+class StrongTag(FormatTag):
+    pattern = re.compile(_build_regex_ftag_pattern('strong'), re.DOTALL)
+
+class EmphasisTag(FormatTag):
+    pattern = re.compile(_build_regex_ftag_pattern('emphasis'), re.DOTALL)
+
 class StrikethroughTag(FormatTag):
     pattern = re.compile(_build_regex_ftag_pattern('strike'), re.DOTALL)
 
-class FontNameTag(FormatTag):
-    pattern = re.compile(_build_regex_ftag_pattern('name@font'), re.DOTALL)
+class FontTag(KeyValueFormatTag):
+    pattern = re.compile(_build_regex_ftag_pattern('font'), re.DOTALL)
 
-class FontSizeTag(FormatTag):
-    pattern = re.compile(_build_regex_ftag_pattern('size@font'), re.DOTALL)
+class ImageTag(KeyValueFormatTag):
+    pattern = re.compile(_build_regex_ftag_pattern('img'), re.DOTALL)
 
-class ImageWidthTag(FormatTag):
-    pattern = re.compile(_build_regex_ftag_pattern('width@img'), re.DOTALL)
-
-class TableCellColorTag(FormatTag):
-    pattern = re.compile(_build_regex_ftag_pattern('color@cell'), re.DOTALL)
+class CellTag(KeyValueFormatTag):
+    pattern = re.compile(_build_regex_ftag_pattern('cell'), re.DOTALL)
 
 class HorizontalRuleTag(FormatTag):
     parse_group = 0
@@ -115,16 +137,10 @@ class FormatBlockTag(BlockToken):
                 break
         return line_buffer
 
-class FormatKeyValueBlockTag(FormatBlockTag):
+class FormatKeyValueBlockTag(KeyValueMixin, FormatBlockTag):
     def __init__(self, lines):
         super().__init__(lines)
-        fkv_list = self.format_value_raw.split(',')
-        self.format = {}
-        for kv_pair in fkv_list:
-            _wl = kv_pair.strip().split('=')
-            if len(_wl) < 2:
-                continue
-            self.format[_wl[0].strip().casefold()] = _wl[1].strip()
+        self.parse_format()
 
 # comment block
 class CommentBlockTag(FormatBlockTag):
@@ -134,14 +150,8 @@ class CommentBlockTag(FormatBlockTag):
 class AlignBlockTag(FormatBlockTag):
     tag = 'align'
 
-class TableStyleBlockTag(FormatBlockTag):
-    tag = 'style@table'
+class TableBlockTag(FormatKeyValueBlockTag):
+    tag = 'table'
 
-class ParagraphStyleBlockTag(FormatBlockTag):
-    tag = 'style@para'
-
-class TableWidthBlockTag(FormatBlockTag):
-    tag = 'width@table'
-
-class ParagraphFormatBlockTag(FormatKeyValueBlockTag):
-    tag = 'format@para'
+class ParagraphBlockTag(FormatKeyValueBlockTag):
+    tag = 'para'

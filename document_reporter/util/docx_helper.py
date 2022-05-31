@@ -11,7 +11,7 @@ from docx.enum.dml import MSO_THEME_COLOR_INDEX
 from docx.shared import Pt, Inches, Cm, Mm, RGBColor
 from docx.styles.styles import Styles
 
-def format_run(run, bold=None, italic=None, underline=None, strike=None, color=None, size=None, name=None):
+def format_run(run, bold=None, italic=None, underline=None, strike=None, color=None, size=None, name=None, style=None):
     if bold is not None:
         run.font.bold = bold
     if italic is not None:
@@ -26,6 +26,8 @@ def format_run(run, bold=None, italic=None, underline=None, strike=None, color=N
         run.font.size = size
     if name is not None:
         run.font.name = name
+    if style is not None:
+        run.style = style
     return run
 
 def format_paragraph(para, style=None, align=None, spacing=None, before=None, after=None):

@@ -19,13 +19,14 @@ md2report special tokens:
 <u>this is underlined</u>
 <strike>strikethrough</strike>
 <c blue><b><i><u>blue text in bold, underlined and italic</u></i></b></c>
-<name@font Arial>testing a different font</name@font>
-<size@font 20pt>testing a bigger font</size@font>
+<font name=Arial>testing a different font</font>
+<font size=20pt>testing a bigger font</font>
+<font name=Arial, size=20pt>Bigger and different</font>
 
 <align center>
 all block/spans here should be aligned in the <strike>left</strike> center
 
-multiple paragraphs **works** as <name@font Consolas>well</name@font>
+multiple paragraphs **works** as <font name=Consolas>well</font>
 
 ### EVEN HEADINGS!
 
@@ -34,11 +35,11 @@ TEST URL
 
 </align>
 
-<style@para No Spacing>
+<para style=No Spacing>
 testing a paragraph style format, 'No Spacing' is a default style, let's now try a very long line blablabalabaaaaalalalalaallaalalalaaaaaaaaaaaaaaaaaaaaasdkajsdasddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddwkajwhdkajwhdkddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddakwdhawkdawd
 
 newline, note that this has no margin coz 'no spacing'? incoming pagebreak
-</style@para>
+</para>
 
 <pgbr>
 
@@ -95,22 +96,18 @@ ul don't reset, duh
 ## image test
 
 absolute path image, default image width
-![altxt](/home/cjason/Pictures/fun/chad.jpg "TODO: caption for this image")
+![altxt](../../Pictures/fun/chad.jpg "TODO: caption for this image")
 
 these images has fixed width 10cm, with aspect ratio maintained
-<width@img 10cm>
-![](/home/cjason/Pictures/fun/chad.jpg "TODO: caption for this image")
-</width@img>
-
-<align center><width@img 10cm>![](/home/cjason/Pictures/fun/doomer.jpg "TODO: caption for this image")</width@img></align>
+<img width=10cm>![](../../Pictures/fun/chad.jpg "TODO: caption for this image")</img>
 
 <align center>
-1. <width@img 5cm>
-![](/home/cjason/Pictures/fun/golden_ticket.png "TODO: caption for this image")
-</width@img>
-2. <width@img 5cm>
-![](samples/teh_tarik.png)
-</width@img>
+<img width=10cm>![](../../Pictures/fun/doomer.jpg "TODO: caption for this image")</img>
+</align>
+
+<align center>
+1. <img width=5cm>![](../../Pictures/fun/golden_ticket.png "TODO: caption for this image")</img>
+2. <img width=5cm>![](samples/teh_tarik.png)</img>
 </align>
 
 
@@ -130,31 +127,29 @@ these images has fixed width 10cm, with aspect ratio maintained
 | abcd | efgh<br>newline? |
 | 1234 |  |
 | qwer | <c green>xxxxxxxxxxxxx</c> |
-| qwer | <name@font Arial><b>xxxxxxxxxxxxx</b></name@font> |
-| img | <width@img 50mm>![](/home/cjason/Pictures/fun/wojak.jpg)</width@img><br>test in newline |
+| qwer | <font name=Arial><b>xxxxxxxxxxxxx</b></font> |
+| img | <img width=50mm>![](../../Pictures/fun/wojak.jpg)</img><br>test in newline |
 
 ## table with style (Table Grid)
 
-<style@table Table Grid>
+<table style=Table Grid>
 | Col1 | Col2 |
 | ---- | ---- |
 | abcd | efgh |
 | 1234 |  |
 | qwer | <c green>xxxxxxxxxxxxx</c> |
-| qwer | <name@font Arial><b>xxxxxxxxxxxxx</b></name@font> |
-| img | <width@img 5cm>![](/home/cjason/Pictures/fun/wojak.jpg)</width@img><br>test in newline |
-</style@table>
+| qwer | <font name=Arial><b>xxxxxxxxxxxxx</b></font> |
+| img | <img width=5cm>![](../../Pictures/fun/wojak.jpg)</img><br>test in newline |
+</table>
 
 ## table with style and custom column width
 
-<style@table Table Grid>
-<width@table 5cm,8cm, 1cm>
+<table style=Table Grid, colwidths=5cm;8cm;1cm>
 | Col1 | Col2 | Col3 |
 | ---- | ---- | --- |
 | abcd | efgh | abc
 | 1234 |  | |
 | qwer | <c green>xxxxxxxxxxxxx</c> | |
-| qwer | <name@font Arial><b>xxxxxxxxxxxxx</b></name@font> | |
-| img | <width@img 5cm>![](/home/cjason/Pictures/fun/wojak.jpg)</width@img><br>test in newline | |
-</width@table>
-</style@table>
+| qwer | <font name=Arial><b>xxxxxxxxxxxxx</b></font> | |
+| img | <img width=5cm>![](../../Pictures/fun/wojak.jpg)</img><br>test in newline | |
+</table>

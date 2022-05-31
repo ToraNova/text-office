@@ -14,8 +14,9 @@ from docx.shared import Pt, Inches, Cm, Mm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
 
-from ..util.docx_helper import format_paragraph, format_run, format_table, insert_hrule, insert_hyperlink, parse_sizespec, assign_numbering, make_figure_caption, shade_cell
-from .format_tag import HorizontalRuleTag, LineBreakTag, PageBreakTag, ColorTag, BoldTag, ItalicTag, UnderlineTag, StrikethroughTag, FontNameTag, FontSizeTag, ImageWidthTag, TableCellColorTag, AlignBlockTag, TableStyleBlockTag, TableWidthBlockTag, ParagraphStyleBlockTag, ParagraphFormatBlockTag, CommentBlockTag
+from ..util.docx_helper import format_paragraph, format_run, format_table, insert_hrule, insert_hyperlink, parse_sizespec, assign_numbering, make_figure_caption, shade_cell, delete_paragraph
+from .format_tag import HorizontalRuleTag, LineBreakTag, PageBreakTag, ColorTag, BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag, FontTag, ImageTag, CellTag
+from .format_tag import CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag
 
 class Renderer(BaseRenderer):
     def __init__(self, docx_template=None, rel_root=None, *extras):
@@ -26,8 +27,8 @@ class Renderer(BaseRenderer):
         self._suppress_ptag_stack = [False]
         super().__init__(*chain(([
             HorizontalRuleTag, LineBreakTag, PageBreakTag,
-            ColorTag, BoldTag, ItalicTag, UnderlineTag, StrikethroughTag, FontNameTag, FontSizeTag, ImageWidthTag, TableCellColorTag,
-            AlignBlockTag, TableStyleBlockTag, TableWidthBlockTag, ParagraphStyleBlockTag, ParagraphFormatBlockTag, CommentBlockTag
+            ColorTag, BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag, FontTag, ImageTag, CellTag,
+            CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag,
         ]), extras))
         self.rel_root = os.getcwd() if rel_root is None else rel_root
         self.docx_template = docx_template
@@ -87,6 +88,13 @@ class Renderer(BaseRenderer):
 
     def render_link(self, token):
         # TODO: allow alt-txt in links, see mistletoe docs on parser issues (token.title is empty!)
+        if len(token.title) < 1:
+            ut = token.target
+        else:
+            ut = token.title
+        insert_hyperlink(self.paras[-1], ut, token.target)
+
+    def render_auto_link(self, token):
         insert_hyperlink(self.paras[-1], token.target, token.target)
 
     def render_image(self, token):
@@ -128,6 +136,7 @@ class Renderer(BaseRenderer):
             self.docx = Document()
         else:
             self.docx = Document(self.docx_template)
+            delete_paragraph(self.docx.paragraphs[-1])
 
         # paragraph and run stack
         self.list_level = 0 # default root level
@@ -190,13 +199,19 @@ class Renderer(BaseRenderer):
         self.populate_and_format_runs(token, bold=True)
 
     def render_strong(self, token):
-        self.populate_and_format_runs(token, bold=True)
+        self.populate_and_format_runs(token, style='Strong')
+
+    def render_strong_tag(self, token):
+        self.populate_and_format_runs(token, style='Strong')
 
     def render_italic_tag(self, token):
         self.populate_and_format_runs(token, italic=True)
 
     def render_emphasis(self, token):
-        self.populate_and_format_runs(token, italic=True)
+        self.populate_and_format_runs(token, style='Emphasis')
+
+    def render_emphasis_tag(self, token):
+        self.populate_and_format_runs(token, style='Emphasis')
 
     def render_underline_tag(self, token):
         self.populate_and_format_runs(token, underline=True)
@@ -207,12 +222,10 @@ class Renderer(BaseRenderer):
     def render_strikethrough(self, token):
         self.populate_and_format_runs(token, strike=True)
 
-    def render_font_name_tag(self, token):
-        self.populate_and_format_runs(token, name=token.format_value)
-
-    def render_font_size_tag(self, token):
-        size = parse_sizespec(token.format_value)
-        self.populate_and_format_runs(token, size=size)
+    def render_font_tag(self, token):
+        _name = token.format['name'] if 'name' in token.format else None
+        _size = parse_sizespec(token.format['size']) if 'size' in token.format else None
+        self.populate_and_format_runs(token, size=_size, name=_name)
 
     def render_heading(self, token):
         # assume that heading has no additional child
@@ -281,35 +294,47 @@ class Renderer(BaseRenderer):
         self.paras.append(self.cells[-1].paragraphs[0])
         self.render_inner(token)
 
-    def render_image_width_tag(self, token):
-        width = parse_sizespec(token.format_value)
-        self.populate_and_resize_image(token, width=width)
+    def render_image_tag(self, token):
+        _width = parse_sizespec(token.format['width']) if 'width' in token.format else None
+        self.populate_and_resize_image(token, width=_width)
 
-    def render_table_cell_color_tag(self, token):
+    def render_cell_tag(self, token):
         if len(self.cells) < 1:
             return
-        color_raw = token.format_value.strip('#')
-        shade_cell(self.cells[-1], color_raw)
+        if 'color' in token.format:
+            _color = token.format['color'].strip('#')
+            shade_cell(self.cells[-1], _color)
         self.render_inner(token)
 
-    def render_table_style_block_tag(self, token):
-        self.populate_and_format_tables(token, style=token.format_value_raw)
+    def render_table_block_tag(self, token):
+        _style = token.format['style'] if 'style' in token.format else None
+        _colwidths = None
+        if 'colwidths' in token.format:
+            _colwidth_raw = token.format['colwidths'].split(';')
+            _colwidths = []
+            for cr in _colwidth_raw:
+                _colwidths.append(parse_sizespec(cr.strip()))
+        self.populate_and_format_tables(token, colwidths=_colwidths, style=_style)
 
-    def render_table_width_block_tag(self, token):
-        colw_raw = token.format_value.split(',')
-        colw = []
-        for cr in colw_raw:
-            colw.append(parse_sizespec(cr.strip()))
-        self.populate_and_format_tables(token, colwidths=colw)
-
-    def render_paragraph_style_block_tag(self, token):
-        self.populate_and_format_paras(token, style=token.format_value_raw)
-
-    def render_paragraph_format_block_tag(self, token):
+    def render_paragraph_block_tag(self, token):
         _spacing = parse_sizespec(token.format['spacing']) if 'spacing' in token.format else None
         _before = parse_sizespec(token.format['before']) if 'before' in token.format else None
         _after = parse_sizespec(token.format['after']) if 'after' in token.format else None
-        self.populate_and_format_paras(token, spacing=_spacing, before=_before, after=_after)
+        _style = token.format['style'] if 'style' in token.format else None
+
+        _align = None
+        if 'align' in token.format:
+            map = {
+                'center': WD_ALIGN_PARAGRAPH.CENTER,
+                'left': WD_ALIGN_PARAGRAPH.LEFT,
+                'right': WD_ALIGN_PARAGRAPH.RIGHT,
+                'justify': WD_ALIGN_PARAGRAPH.JUSTIFY,
+            }
+            if token.format['align'] not in map:
+                raise KeyError(f'no such alignment type: {token.format_value} (center, left, right, justify)')
+            _align = map[token.format['align']]
+
+        self.populate_and_format_paras(token, style=_style, spacing=_spacing, before=_before, after=_after, align=_align)
 
     def render_comment_block_tag(self, token):
         # do nothing
