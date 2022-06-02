@@ -16,8 +16,5 @@ from document_reporter.md import file_generate, docx_generate, basetpl_generate
 #docx = docx_generate('samples/figures.md')
 #docx.save('/home/cjason/vmshare/figures.docx')
 
-#docx = docx_generate('samples/tables.md')
-#docx.save('/home/cjason/vmshare/tables.docx')
-
-docx = docx_generate('/home/cjason/work/nparks/2022-may/mobile/findings/rootok.md')
-docx.save('/home/cjason/vmshare/rootok.docx')
+docx = docx_generate('samples/tables.md')
+docx.save('/home/cjason/vmshare/tables.docx')

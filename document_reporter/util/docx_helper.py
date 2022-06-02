@@ -3,7 +3,7 @@ from docx.oxml.shared import OxmlElement
 from docx.oxml.ns import qn, nsdecls
 from docx.oxml import parse_xml, CT_P
 from docx.opc.constants import RELATIONSHIP_TYPE
-from docx.oxml.numbering import CT_Num, CT_Numbering
+from docx.oxml.numbering import CT_Num, CT_Numbering, CT_NumPr
 from docx.enum.section import WD_SECTION, WD_ORIENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.base import XmlMappedEnumMember
@@ -145,6 +145,12 @@ def assign_numbering(doc, para, anid, start=1, tierlvl=0):
     ctn._insert_num(num)
     para._p.get_or_add_pPr().get_or_add_numPr().get_or_add_numId().val = nxtnid
     return nxtnid
+
+def set_paranumpr(para, numid=3, ilvl=0):
+    npr = para._p.get_or_add_pPr().get_or_add_numPr()
+    print(numid, ilvl)
+    npr.get_or_add_numId().val = numid
+    npr.get_or_add_ilvl().val = ilvl
 
 def make_figure_caption(run, include_heading=0):
     '''

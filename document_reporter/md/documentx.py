@@ -14,7 +14,7 @@ from docx.shared import Pt, Inches, Cm, Mm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
 
-from ..util.docx_helper import format_paragraph, format_run, format_table, insert_hrule, insert_hyperlink, parse_sizespec, assign_numbering, make_figure_caption, shade_cell, delete_paragraph
+from ..util.docx_helper import format_paragraph, format_run, format_table, insert_hrule, insert_hyperlink, parse_sizespec, assign_numbering, make_figure_caption, shade_cell, delete_paragraph, set_paranumpr
 from .format_tag import HorizontalRuleTag, LineBreakTag, PageBreakTag, ColorTag, BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag, FontTag, ImageTag, CellTag
 from .format_tag import CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag
 
@@ -45,11 +45,14 @@ class Renderer(BaseRenderer):
         level = self.list_level
         self.list_level += 1
 
+        #if 'List Number' in self.docx.styles and 'List Bullet' in self.docx.styles:
+        # old numbering system
+
         # TODO: fix this abstract_numId map with a more robust implementation
         anid_map = {
-                0: 7, # numId 5, absnumId 7
-                1: 3, # numId 6, absnumId 3
-                2: 2, # numId 7, absnumId 2
+            0: 7, # numId 5, absnumId 7
+            1: 3, # numId 6, absnumId 3
+            2: 2, # numId 7, absnumId 2
         }
 
         if ordered:
@@ -74,7 +77,26 @@ class Renderer(BaseRenderer):
             added = len(self.paras) - tos
             #if added > 0 and ordered:
             if added > 0 and ordered and idx == 0:
-                assign_numbering(self.docx, self.paras[tos], anid_map[level], number)
+                assign_numbering(self.docx, self.paras[tos], anid_map[level], start=number)
+
+        #elif 'List Paragraph' in self.docx.styles:
+
+        #    nid_map = {
+        #        True: 3, # ordered use numId = 3
+        #        False: 5 # non-ordered use numId = 5, check the .docx document.xml
+        #    }
+
+        #    for idx, c in enumerate(token.children):
+        #        number = token.start + idx if ordered else 1
+
+        #        tos = len(self.paras)
+        #        for ic in c.children:
+        #            ic.docx_style = 'List Paragraph'
+        #            self.render(ic)
+        #        added = len(self.paras) - tos
+        #        set_paranumpr(self.paras[tos], nid_map[ordered], level)
+        #else:
+        #    raise Exception('no valid numbering styles found')
 
         self.list_level -= 1
 

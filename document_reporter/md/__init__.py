@@ -16,20 +16,29 @@ def file_generate(in_path, renderer, encoding='utf-8', **kwargs):
             docx = renderer.render(block_token.Document(infile))
             return docx
 
-def basetpl_generate(path):
+def basetpl_generate():
     """
     to generate a document template for use with 'docx_template' in DocxRenderer
     """
-    Document().save(path)
+    return Document()
 
 def docx_generate(mdarg, encoding='utf-8', **kwargs):
     if isinstance(mdarg, list) and len(mdarg) > 0:
-        main_doc = file_generate(mdarg[0], DocxRenderer, encoding, **kwargs)
-        main_comp = Composer(main_doc)
-        for md in mdarg[1:]:
-            app_doc = file_generate(md, DocxRenderer, encoding, **kwargs)
-            main_comp.append(app_doc)
+        try:
+            main_doc = file_generate(mdarg[0], DocxRenderer, encoding, **kwargs)
+            main_comp = Composer(main_doc)
 
-        return main_comp.doc
+            for md in mdarg[1:]:
+                try:
+                    app_doc = file_generate(md, DocxRenderer, encoding, **kwargs)
+                    main_comp.append(app_doc)
+                except Exception as e:
+                    print(f"Exception for '{md}'':",e)
+
+            return main_comp.doc
+        except Exception as e:
+            print(f"Exception for '{mdarg[0]}':", e)
+
+
     else:
         return file_generate(mdarg, DocxRenderer, encoding, **kwargs)

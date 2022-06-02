@@ -1,4 +1,4 @@
-#!bin/python
+#!/usr/bin/env python
 
 import argparse
 from cvss import CVSS2, CVSS3
@@ -23,7 +23,7 @@ _cvss_v = args.cvss
 if _cvss_v is None:
     # info
     severity = 'Info'
-    score = '-'
+    score = 0.0
     vector = '-'
 else:
     if not _cvss_v.startswith('CVSS:3.1/'):
@@ -34,11 +34,17 @@ else:
     score = _cvss_o.scores()[0]
     vector = _cvss_o.clean_vector()
 
+if score < 0.1:
+    score_print = '-'
+else:
+    score_print = str(score)
+
 color = get_riskcolor(severity)
 
 finding_name = args.name
-clean_name = args.name.casefold().translate(dict.fromkeys(map(ord, u' #/()[]{}')))
-mdfile_name = f'{clean_name}.md'
+clean_name = args.name.casefold().translate(dict.fromkeys(map(ord, u' \n#/\\()[]{}<>-')))
+strscore = str(score).replace('.','')
+mdfile_name = f'{strscore}_{clean_name}.md'
 
 print('creating boilerplate markdown with:',severity, score, vector, color)
 with open(mdfile_name, 'a+') as out:
@@ -48,7 +54,7 @@ with open(mdfile_name, 'a+') as out:
 <para before=6pt, spacing=1.15, after=6pt, align=center>
 |<cell color=#000000>Risk Rating</cell>|<cell color=#000000>Overall Score</cell>|<cell color=#000000>CVSS Vector</cell>|
 |---|---|---|
-|<cell color={color}>{severity}</cell>|{score}|{vector}|
+|<cell color={color}>{severity}</cell>|{score_print}|{vector}|
 </para>
 </table>
 
@@ -58,6 +64,12 @@ with open(mdfile_name, 'a+') as out:
 
 **Observations**
 
+<align center>
+<img width=12cm>![](screencaps/test-1.png "TODO: caption 1")</img>
+
+<img width=12cm>![](screencaps/test-2.png "TODO: caption 2")</img>
+</align>
+
 **Screenshots**
 
 **Implications**
@@ -66,5 +78,11 @@ with open(mdfile_name, 'a+') as out:
 
 **Reference**
 
+**Management Comments**
+
 **Status**
+
+Open
+
+<pgbr>
 ''')
