@@ -19,6 +19,18 @@ def get_riskcolor(severity):
     }
     return _map[severity.casefold()]
 
+def get_severity(score):
+    if score >= 9.0:
+        return 'Critical'
+    elif score >= 7.0:
+        return 'High'
+    elif score >= 4.0:
+        return 'Medium'
+    elif score >= 0.1:
+        return 'Low'
+    else:
+        return 'Info'
+
 _cvss_v = args.cvss
 if _cvss_v is None:
     # info
@@ -30,8 +42,9 @@ else:
         _cvss_v = 'CVSS:3.1/'+_cvss_v
     _cvss_o = CVSS3(_cvss_v)
 
-    severity = _cvss_o.severities()[0]
-    score = _cvss_o.scores()[0]
+    #severity = _cvss_o.severities()[0]
+    score = min(_cvss_o.scores())
+    severity = get_severity(score)
     vector = _cvss_o.clean_vector()
 
 if score < 0.1:
@@ -64,13 +77,13 @@ with open(mdfile_name, 'a+') as out:
 
 **Observations**
 
+**Screenshots**
+
 <align center>
 <img width=12cm>![](screencaps/test-1.png "TODO: caption 1")</img>
 
 <img width=12cm>![](screencaps/test-2.png "TODO: caption 2")</img>
 </align>
-
-**Screenshots**
 
 **Implications**
 
