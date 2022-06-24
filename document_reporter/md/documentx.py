@@ -3,6 +3,7 @@
 
 import os
 import re
+import webcolors
 from urllib.parse import urlparse
 
 from itertools import chain
@@ -10,16 +11,29 @@ from mistletoe import block_token, span_token
 from mistletoe.base_renderer import BaseRenderer
 
 from docx import Document
-from docx.shared import Pt, Inches, Cm, Mm, RGBColor
+from docx.shared import Pt, Inches, Cm, Mm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
 
-from ..util.docx_helper import format_paragraph, format_run, format_table, insert_hrule, insert_hyperlink, parse_sizespec, assign_numbering, make_figure_caption, shade_cell, delete_paragraph, set_paranumpr
-from .format_tag import HorizontalRuleTag, LineBreakTag, PageBreakTag, ColorTag, BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag, FontTag, ImageTag, CellTag
-from .format_tag import CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag
+from ..util import warn_invalid_opts
+from ..util.docx_helper import (
+        format_paragraph, format_run, format_table, insert_hrule,
+        insert_hyperlink, parse_sizespec, assign_numbering,
+        make_figure_caption, shade_cell, delete_paragraph, set_figure_border, parse_color
+        )
+
+from .format_tag import (
+        HorizontalRuleTag, LineBreakTag, PageBreakTag,
+        BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag,
+        FontTag, ImageTag, CellTag
+        )
+
+from .format_tag import (
+        CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag
+        )
 
 class Renderer(BaseRenderer):
-    def __init__(self, docx_template=None, rel_root=None, *extras):
+    def __init__(self, tag='notag', docx_template=None, rel_root=None, docx_opts=None, *extras):
         '''
         renders a .docx using docx_template as the template file
         rel_root determine the path to include relative path resources (e.g., images)
@@ -27,11 +41,15 @@ class Renderer(BaseRenderer):
         self._suppress_ptag_stack = [False]
         super().__init__(*chain(([
             HorizontalRuleTag, LineBreakTag, PageBreakTag,
-            ColorTag, BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag, FontTag, ImageTag, CellTag,
+            BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag, FontTag, ImageTag, CellTag,
             CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag,
         ]), extras))
         self.rel_root = os.getcwd() if rel_root is None else rel_root
         self.docx_template = docx_template
+        self.docx_opts = {}
+        self.run_tag = tag
+        if isinstance(docx_opts, dict):
+            self.docx_opts = docx_opts
 
     def render_inner(self, token):
         # inner rendering not supported on DocxRenderer
@@ -132,17 +150,7 @@ class Renderer(BaseRenderer):
         if len(token.title.strip()) < 1:
             return
 
-        tcpar = self.docx.add_paragraph(style='Caption').clear()
-        format_paragraph(tcpar, align=WD_ALIGN_PARAGRAPH.CENTER)
-        #_hdguse = 1 # use hdg lvl 1 count as index
-        #if _hdguse not in self.hdg_count:
-        #    predot_num = ''
-        #else:
-        #    predot_num = f'{self.hdg_count[_hdguse]}-'
-        #make_figure_caption(tcpar.add_run(f'Figure {predot_num}'))
-        # TODO: allow user to choose whether to include heading
-        make_figure_caption(tcpar.add_run(f'Figure '), 1)
-        tcrun = tcpar.add_run(f': {token.title}')
+        self.populate_caption('Figure', token.title)
 
     def render_image_tag(self, token):
         up = urlparse(token.format_value_raw)
@@ -199,7 +207,7 @@ class Renderer(BaseRenderer):
         for i in range(added):
             format_table(self.tables[-(i+1)], **kwargs)
 
-    def populate_and_resize_image(self, token, width, height=None):
+    def populate_and_format_image(self, token, width, height=None, border_width=None, border_color=None):
         tos = len(self.inline_shapes)
         self.render_inner(token)
         added = len(self.inline_shapes) - tos
@@ -214,8 +222,11 @@ class Renderer(BaseRenderer):
 
             target.width = width
 
-    def render_color_tag(self, token):
-        self.populate_and_format_runs(token, color=RGBColor.from_string(token.format_value))
+            if border_width is not None:
+                if border_color is not None:
+                    set_figure_border(target, width=border_width, color=border_color)
+                else:
+                    set_figure_border(target, width=border_width)
 
     def render_bold_tag(self, token):
         self.populate_and_format_runs(token, bold=True)
@@ -244,11 +255,6 @@ class Renderer(BaseRenderer):
     def render_strikethrough(self, token):
         self.populate_and_format_runs(token, strike=True)
 
-    def render_font_tag(self, token):
-        _name = token.format['name'] if 'name' in token.format else None
-        _size = parse_sizespec(token.format['size']) if 'size' in token.format else None
-        self.populate_and_format_runs(token, size=_size, name=_name)
-
     def render_heading(self, token):
         # assume that heading has no additional child
         if token.level not in self.hdg_count:
@@ -266,17 +272,6 @@ class Renderer(BaseRenderer):
             self.paras.append(self.docx.add_paragraph().clear())
         self.render_inner(token)
 
-    def render_align_block_tag(self, token):
-        map = {
-            'center': WD_ALIGN_PARAGRAPH.CENTER,
-            'left': WD_ALIGN_PARAGRAPH.LEFT,
-            'right': WD_ALIGN_PARAGRAPH.RIGHT,
-            'justify': WD_ALIGN_PARAGRAPH.JUSTIFY,
-        }
-        if token.format_value not in map:
-            raise KeyError(f'no such alignment type: {token.format_value} (center, left, right, justify)')
-        self.populate_and_format_paras(token, align=map[token.format_value])
-
     def render_horizontal_rule_tag(self, token):
         insert_hrule(self.paras[-1], token.format_value)
 
@@ -291,6 +286,10 @@ class Renderer(BaseRenderer):
         if len(self.runs) < 1:
             self.runs.append(self.paras[-1].add_run())
         self.runs[-1].add_break()
+
+    def render_comment_block_tag(self, token):
+        # do nothing
+        pass
 
     def render_table(self, token):
         if len(token.children) < 1:
@@ -316,29 +315,85 @@ class Renderer(BaseRenderer):
         self.paras.append(self.cells[-1].paragraphs[0])
         self.render_inner(token)
 
-    def render_image_tag(self, token):
-        _width = parse_sizespec(token.format['width']) if 'width' in token.format else None
-        self.populate_and_resize_image(token, width=_width)
+    # >>--------------------------------------SEP LINE 1-------------------------------------->>
 
-    def render_cell_tag(self, token):
-        if len(self.cells) < 1:
-            return
-        if 'color' in token.format:
-            _color = token.format['color'].strip('#')
-            shade_cell(self.cells[-1], _color)
-        self.render_inner(token)
+    def render_align_block_tag(self, token):
+        # NO OPTIONS FOR THIS!
+        map = {
+            'center': WD_ALIGN_PARAGRAPH.CENTER,
+            'left': WD_ALIGN_PARAGRAPH.LEFT,
+            'right': WD_ALIGN_PARAGRAPH.RIGHT,
+            'justify': WD_ALIGN_PARAGRAPH.JUSTIFY,
+        }
+        if token.format_value not in map:
+            raise KeyError(f'no such alignment type: {token.format_value} (center, left, right, justify)')
+        self.populate_and_format_paras(token, align=map[token.format_value])
+
+    def render_font_tag(self, token):
+        _valid_opts = ['name', 'size', 'color']
+        warn_invalid_opts(self.run_tag, _valid_opts, token.format)
+
+        _name = token.format['name'] if 'name' in token.format else None
+        _size = parse_sizespec(token.format['size']) if 'size' in token.format else None
+        _color = parse_color(token.format['color']) if 'color' in token.format else None
+        self.populate_and_format_runs(token, size=_size, name=_name, color=_color)
+
+    def populate_caption(self, caption_type, caption_string, align=None):
+        tcpar = self.docx.add_paragraph(style='Caption').clear()
+        format_paragraph(tcpar, align=align)
+        try:
+            _hp = int(self.docx_opts['caption_prefix_heading'])
+            make_figure_caption(tcpar.add_run(f'{caption_type} '), _hp)
+        except (KeyError, ValueError) as e:
+            make_figure_caption(tcpar.add_run(f'{caption_type} '), 0)
+
+        tcrun = tcpar.add_run(f': {caption_string}')
 
     def render_table_block_tag(self, token):
+        _valid_opts = ['style', 'column_widths', 'caption']
+        warn_invalid_opts(self.run_tag, _valid_opts, token.format)
+
         _style = token.format['style'] if 'style' in token.format else None
         _colwidths = None
-        if 'colwidths' in token.format:
-            _colwidth_raw = token.format['colwidths'].split(';')
+        if 'column_widths' in token.format:
+            _colwidth_raw = token.format['column_widths'].split(';')
             _colwidths = []
             for cr in _colwidth_raw:
                 _colwidths.append(parse_sizespec(cr.strip()))
+
+        _caption = token.format['caption'] if 'caption' in token.format else None
+        if _caption is not None:
+            self.populate_caption('Table', _caption)
+
         self.populate_and_format_tables(token, colwidths=_colwidths, style=_style)
 
+
+    def render_cell_tag(self, token):
+        _valid_opts = ['color']
+        warn_invalid_opts(self.run_tag, _valid_opts, token.format)
+
+        if len(self.cells) < 1:
+            return
+
+        _color = parse_color(token.format['color']) if 'color' in token.format else None
+        if _color is not None:
+            shade_cell(self.cells[-1], _color)
+
+        self.render_inner(token)
+
+    def render_image_tag(self, token):
+        _valid_opts = ['width', 'border_width', 'border_color']
+        warn_invalid_opts(self.run_tag, _valid_opts, token.format)
+
+        _width = parse_sizespec(token.format['width']) if 'width' in token.format else None
+        _border_width = parse_sizespec(token.format['border_width']) if 'border_width' in token.format else None
+        _border_color = parse_color(token.format['border_color']) if 'border_color' in token.format else None
+        self.populate_and_format_image(token, width=_width, border_width=_border_width, border_color=_border_color)
+
     def render_paragraph_block_tag(self, token):
+        _valid_opts = ['spacing', 'before', 'after', 'style', 'align']
+        warn_invalid_opts(self.run_tag, _valid_opts, token.format)
+
         _spacing = parse_sizespec(token.format['spacing']) if 'spacing' in token.format else None
         _before = parse_sizespec(token.format['before']) if 'before' in token.format else None
         _after = parse_sizespec(token.format['after']) if 'after' in token.format else None
@@ -358,6 +413,4 @@ class Renderer(BaseRenderer):
 
         self.populate_and_format_paras(token, style=_style, spacing=_spacing, before=_before, after=_after, align=_align)
 
-    def render_comment_block_tag(self, token):
-        # do nothing
-        pass
+

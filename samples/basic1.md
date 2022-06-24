@@ -13,15 +13,15 @@ paragraph test **bold** *italic* (TM)
 ### heading3
 
 md2report special tokens:
-<c red>this is in red</c>
+<font color=red>this is in red</font>
 <b>this is in bold</b>
 <i>this is in italic</i>
 <u>this is underlined</u>
 <strike>strikethrough</strike>
-<c blue><b><i><u>blue text in bold, underlined and italic</u></i></b></c>
+<font color=blue><b><i><u>blue text in bold, underlined and italic</u></i></b></font>
 <font name=Arial>testing a different font</font>
 <font size=20pt>testing a bigger font</font>
-<font name=Arial, size=20pt>Bigger and different</font>
+<font name=Arial size=20pt>Bigger and different</font>
 
 <align center>
 all block/spans here should be aligned in the <strike>left</strike> center
@@ -35,7 +35,7 @@ TEST URL
 
 </align>
 
-<para style=No Spacing>
+<para style='No Spacing'>
 testing a paragraph style format, 'No Spacing' is a default style, let's now try a very long line blablabalabaaaaalalalalaallaalalalaaaaaaaaaaaaaaaaaaaaasdkajsdasddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddwkajwhdkajwhdkddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddakwdhawkdawd
 
 newline, note that this has no margin coz 'no spacing'? incoming pagebreak
@@ -126,30 +126,30 @@ these images has fixed width 10cm, with aspect ratio maintained
 | ---- | ---- |
 | abcd | efgh<br>newline? |
 | 1234 |  |
-| qwer | <c green>xxxxxxxxxxxxx</c> |
+| qwer | <font color=green>xxxxxxxxxxxxx</font> |
 | qwer | <font name=Arial><b>xxxxxxxxxxxxx</b></font> |
 | img | <img width=50mm>![](../../Pictures/fun/wojak.jpg)</img><br>test in newline |
 
 ## table with style (Table Grid)
 
-<table style=Table Grid>
+<table style='Table Grid'>
 | Col1 | Col2 |
 | ---- | ---- |
 | abcd | efgh |
 | 1234 |  |
-| qwer | <c green>xxxxxxxxxxxxx</c> |
+| qwer | <font color=green>xxxxxxxxxxxxx</font> |
 | qwer | <font name=Arial><b>xxxxxxxxxxxxx</b></font> |
 | img | <img width=5cm>![](../../Pictures/fun/wojak.jpg)</img><br>test in newline |
 </table>
 
 ## table with style and custom column width
 
-<table style=Table Grid, colwidths=5cm;8cm;1cm>
+<table style='Table Grid' column_widths='5cm, 8cm, 1cm'>
 | Col1 | Col2 | Col3 |
 | ---- | ---- | --- |
 | abcd | efgh | abc
 | 1234 |  | |
-| qwer | <c green>xxxxxxxxxxxxx</c> | |
+| qwer | <font color=blue>xxxxxxxxxxxxx</font> | |
 | qwer | <font name=Arial><b>xxxxxxxxxxxxx</b></font> | |
 | img | <img width=5cm>![](../../Pictures/fun/wojak.jpg)</img><br>test in newline | |
 </table>

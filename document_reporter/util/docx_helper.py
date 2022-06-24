@@ -1,4 +1,5 @@
 import re
+import webcolors
 from docx.oxml.shared import OxmlElement
 from docx.oxml.ns import qn, nsdecls
 from docx.oxml import parse_xml, CT_P
@@ -10,6 +11,7 @@ from docx.enum.base import XmlMappedEnumMember
 from docx.enum.dml import MSO_THEME_COLOR_INDEX
 from docx.shared import Pt, Inches, Cm, Mm, RGBColor
 from docx.styles.styles import Styles
+from docx.oxml.xmlchemy import serialize_for_reading
 
 def format_run(run, bold=None, italic=None, underline=None, strike=None, color=None, size=None, name=None, style=None):
     if bold is not None:
@@ -82,6 +84,25 @@ def insert_hrule(para, linestyle='single'):
     bottom.set(qn('w:color'), 'auto')
     pBdr.append(bottom)
     return pBdr
+
+def parse_color(color):
+    if color.startswith('#') and len(color) > 6:
+        try:
+            return RGBColor.from_string(color[1:])
+        except Exception as e:
+            pass
+
+    try:
+        return RGBColor.from_string(webcolors.name_to_hex(color)[1:])
+    except Exception as e:
+        pass
+
+    try:
+        return RGBColor.from_string(color)
+    except Exception as e:
+        pass
+
+    raise ValueError(f'unable to parse color: {color}')
 
 def parse_sizespec(sizespec):
     try:
@@ -191,59 +212,72 @@ def delete_paragraph(para):
     p.getparent().remove(p)
     p._p = p._element = None
 
-def shade_cell(cell, rgbhex='111111'):
-    sh_elem = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), rgbhex))
+def shade_cell(cell, color=RGBColor(11, 11, 11)):
+    sh_elem = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), color))
     cell._tc.get_or_add_tcPr().append(sh_elem)
+
+def set_figure_border(figobj, width=Pt(1.5), color=RGBColor(00, 00, 00)):
+    colw = str(color)
+    strw = str(width)
+    aln = OxmlElement('a:ln')
+    aln.set('w', strw)
+    afl = OxmlElement('a:solidFill')
+    acl = OxmlElement('a:srgbClr')
+    acl.set('val', colw)
+    afl.append(acl)
+    aln.append(afl)
+
+    inline = figobj._inline
+    spPr = inline.graphic.graphicData.pic.spPr
+    spPr.append(aln)
+
+
+    extEff = OxmlElement('wp:effectExtent')
+    extEff.set('l', strw)
+    extEff.set('t', strw)
+    extEff.set('r', strw)
+    extEff.set('b', strw)
+
+    ext = inline.extent
+    ext.addnext(extEff)
 
 # NOT INCORPORATED INTO CORE YET-------------------------------------------------
 
-def change_orientation(doc, orient='portrait'):
-    current_section = doc.sections[-1]
-    new_width, new_height = current_section.page_height, current_section.page_width
-    new_section = doc.add_section(WD_SECTION.NEW_PAGE)
-    if orient == 'landscape':
-        new_section.orientation = WD_ORIENT.LANDSCAPE
-    else:
-        new_section.orientation = WD_ORIENT.PORTRAIT
-    new_section.page_width = new_width
-    new_section.page_height = new_height
-    return new_section
-
-def set_border(cell, **kwargs):
-    """
-    Set cell`s border
-    Usage:
-
-    set_cell_border(
-        cell,
-        top={"sz": 12, "val": "single", "color": "#FF0000", "space": "0"},
-        bottom={"sz": 12, "color": "#00FF00", "val": "single"},
-        left={"sz": 24, "val": "dashed", "shadow": "true"},
-        right={"sz": 12, "val": "dashed"},
-    )
-    """
-    tc = cell._tc
-    tcPr = tc.get_or_add_tcPr()
-
-    # check for tag existnace, if none found, then create one
-    tcBorders = tcPr.first_child_found_in("w:tblBorders")
-    if tcBorders is None:
-        tcBorders = OxmlElement('w:tblBorders')
-        tcPr.append(tcBorders)
-
-    # list over all available tags
-    for edge in ('top', 'bottom', 'left', 'right', 'insideH', 'insideV'):
-        edge_data = kwargs.get(edge)
-        if edge_data:
-            tag = 'w:{}'.format(edge)
-
-            # check for tag existnace, if none found, then create one
-            element = tcBorders.find(qn(tag))
-            if element is None:
-                element = OxmlElement(tag)
-                tcBorders.append(element)
-
-            # looks like order of attributes is important
-            for key in ["sz", "val", "color", "space", "shadow"]:
-                if key in edge_data:
-                    element.set(qn('w:{}'.format(key)), str(edge_data[key]))
+#def set_border(cell, **kwargs):
+#    """
+#    Set cell`s border
+#    Usage:
+#
+#    set_cell_border(
+#        cell,
+#        top={"sz": 12, "val": "single", "color": "#FF0000", "space": "0"},
+#        bottom={"sz": 12, "color": "#00FF00", "val": "single"},
+#        left={"sz": 24, "val": "dashed", "shadow": "true"},
+#        right={"sz": 12, "val": "dashed"},
+#    )
+#    """
+#    tc = cell._tc
+#    tcPr = tc.get_or_add_tcPr()
+#
+#    # check for tag existnace, if none found, then create one
+#    tcBorders = tcPr.first_child_found_in("w:tblBorders")
+#    if tcBorders is None:
+#        tcBorders = OxmlElement('w:tblBorders')
+#        tcPr.append(tcBorders)
+#
+#    # list over all available tags
+#    for edge in ('top', 'bottom', 'left', 'right', 'insideH', 'insideV'):
+#        edge_data = kwargs.get(edge)
+#        if edge_data:
+#            tag = 'w:{}'.format(edge)
+#
+#            # check for tag existnace, if none found, then create one
+#            element = tcBorders.find(qn(tag))
+#            if element is None:
+#                element = OxmlElement(tag)
+#                tcBorders.append(element)
+#
+#            # looks like order of attributes is important
+#            for key in ["sz", "val", "color", "space", "shadow"]:
+#                if key in edge_data:
+#                    element.set(qn('w:{}'.format(key)), str(edge_data[key]))
