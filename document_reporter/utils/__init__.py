@@ -1,4 +1,11 @@
+import os
 from shlex import shlex
+
+_path_ = os.path.realpath(__file__)
+_base_, _file_ = os.path.split(_path_)
+_lib_ = _base_[:-_base_[::-1].find(os.path.sep)-1]
+prj_root_path = _lib_[:-_lib_[::-1].find(os.path.sep)]
+boiler_template_path = os.path.join(prj_root_path, 'boiler_templates')
 
 def parse_kv_pairs(text, item_sep=",", value_sep="="):
     """Parse key-value pairs from a shell-like text."""

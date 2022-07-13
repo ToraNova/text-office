@@ -6,7 +6,7 @@ from natsort import natsorted
 from os.path import isfile, isdir, join
 from docx import Document
 from document_reporter.md import file_generate, docx_generate
-from document_reporter.util import parse_kv_pairs
+from document_reporter.utils import parse_kv_pairs
 
 parser = argparse.ArgumentParser()
 # single

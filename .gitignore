@@ -18,3 +18,8 @@ template.checklist.json
 dev.db
 uploads/*
 tmp/*
+
+# template stuff
+boiler_templates/*
+!boiler_templates/.gitkeep
+!boiler_templates/dtpt-1.md

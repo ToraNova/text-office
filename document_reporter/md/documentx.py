@@ -15,8 +15,8 @@ from docx.shared import Pt, Inches, Cm, Mm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
 
-from ..util import warn_invalid_opts
-from ..util.docx_helper import (
+from ..utils import warn_invalid_opts
+from ..utils.docx_helper import (
         format_paragraph, format_run, format_table, insert_hrule,
         insert_hyperlink, parse_sizespec, assign_numbering,
         make_figure_caption, shade_cell, delete_paragraph, set_figure_border, parse_color
@@ -232,7 +232,7 @@ class Renderer(BaseRenderer):
         self.populate_and_format_runs(token, bold=True)
 
     def render_strong(self, token):
-        self.populate_and_format_runs(token, style='Strong')
+        self.populate_and_format_runs(token, style='Strong', bold=True)
 
     def render_strong_tag(self, token):
         self.populate_and_format_runs(token, style='Strong')
@@ -241,7 +241,7 @@ class Renderer(BaseRenderer):
         self.populate_and_format_runs(token, italic=True)
 
     def render_emphasis(self, token):
-        self.populate_and_format_runs(token, style='Emphasis')
+        self.populate_and_format_runs(token, style='Emphasis', italic=True)
 
     def render_emphasis_tag(self, token):
         self.populate_and_format_runs(token, style='Emphasis')
@@ -356,7 +356,8 @@ class Renderer(BaseRenderer):
         _style = token.format['style'] if 'style' in token.format else None
         _colwidths = None
         if 'column_widths' in token.format:
-            _colwidth_raw = token.format['column_widths'].split(';')
+            # TODO: make it more flexible (allow , or ;)
+            _colwidth_raw = token.format['column_widths'].split(',')
             _colwidths = []
             for cr in _colwidth_raw:
                 _colwidths.append(parse_sizespec(cr.strip()))

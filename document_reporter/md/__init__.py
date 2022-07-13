@@ -1,7 +1,7 @@
 import traceback
 from mistletoe import block_token
 
-from .. import util
+from .. import utils
 from .documentx import Renderer as DocxRenderer
 from docxcompose.composer import Composer
 
@@ -28,11 +28,11 @@ def docx_generate(mdarg, encoding='utf-8', **kwargs):
                     app_doc = file_generate(md, DocxRenderer, encoding, **kwargs)
                     main_comp.append(app_doc)
                 except Exception as e:
-                    util.show_error(mdarg[0], e)
+                    utils.show_error(mdarg[0], e)
 
             return main_comp.doc
         except Exception as e:
-            util.show_error(mdarg[0], e)
+            utils.show_error(mdarg[0], e)
 
     else:
         return file_generate(mdarg, DocxRenderer, encoding, **kwargs)

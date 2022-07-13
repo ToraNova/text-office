@@ -3,99 +3,18 @@
 import argparse
 from cvss import CVSS2, CVSS3
 
+import sys
+import importlib
+
 parser = argparse.ArgumentParser()
-# single
-parser.add_argument('name', help='name of finding', type=str)
-parser.add_argument('-c', '--cvss', help="cvss vector of finding", type=str)
-args = parser.parse_args()
+parser.add_argument('module', help='boilerplate generator module to use (e.g., vapt)', type=str)
+args = parser.parse_args(sys.argv[1:2])
 
-def get_riskcolor(severity):
-    _map = {
-            'critical':'#c00000',
-            'high':'#ff0000',
-            'medium':'#ffc000',
-            'low':'#92d050',
-            'info':'#00b0f0'
-    }
-    return _map[severity.casefold()]
-
-def get_severity(score):
-    if score >= 9.0:
-        return 'Critical'
-    elif score >= 7.0:
-        return 'High'
-    elif score >= 4.0:
-        return 'Medium'
-    elif score >= 0.1:
-        return 'Low'
-    else:
-        return 'Info'
-
-_cvss_v = args.cvss
-if _cvss_v is None:
-    # info
-    severity = 'Info'
-    score = 0.0
-    vector = '-'
-else:
-    if not _cvss_v.startswith('CVSS:3.1/'):
-        _cvss_v = 'CVSS:3.1/'+_cvss_v
-    _cvss_o = CVSS3(_cvss_v)
-
-    #severity = _cvss_o.severities()[0]
-    score = min(_cvss_o.scores())
-    severity = get_severity(score)
-    vector = _cvss_o.clean_vector()
-
-if score < 0.1:
-    score_print = '-'
-else:
-    score_print = str(score)
-
-color = get_riskcolor(severity)
-
-finding_name = args.name
-clean_name = args.name.casefold().translate(dict.fromkeys(map(ord, u' \n#/\\()[]{}<>-')))
-strscore = str(score).replace('.','')
-mdfile_name = f'{strscore}_{clean_name}.md'
-
-print('creating boilerplate markdown with:',severity, score, vector, color)
-with open(mdfile_name, 'a+') as out:
-    out.write(f'''### {finding_name}
-
-<table style='Table Grid' column_widths='1.11in, 1.11in, 4in, 1.11in, 1.11in'>
-<para before=6pt spacing=1.15 after=6pt align=center>
-|<cell color='#000000'>Risk Rating</cell>|<cell color='#000000'>Overall Score</cell>|<cell color='#000000'>CVSS Vector</cell>|<cell color='#000000'>CWE ID</cell>|<cell color='#000000'>OWASP Top 10</cell>|
-|---|---|---|---|---|
-|<cell color='{color}'>{severity}</cell>|{score_print}|{vector}|||
-</para>
-</table>
-
-**Affected Module**
-
--
-
-**Observations**
-
-**Screenshots**
-
-<align center>
-<img width=5in border_width=1.5pt>![](screencaps/test-1.png "TODO: caption 1")</img>
-
-<img width=5in border_width=1.5pt>![](screencaps/test-2.png "TODO: caption 2")</img>
-</align>
-
-**Implications**
-
-**Recommendations**
-
-**Reference**
-
-**Management Comments**
-
-**Status**
-
-Open
-
-<pgbr>
-''')
+try:
+    importstr = f'document_reporter.boilers.{args.module}'
+    boiler = importlib.import_module(importstr)
+    boiler.generate(sys.argv[2:])
+except ImportError:
+    print(f'boilerplate module \'{args.module}\' not found.')
+except Exception as e:
+    print('exception occured:', e)

@@ -3,7 +3,7 @@
 # https://github.com/miyuchina/mistletoe/blob/master/mistletoe/html_renderer.py
 
 import re
-from ..util import parse_kv_pairs, show_error
+from ..utils import parse_kv_pairs, show_error
 from mistletoe.span_token import SpanToken, RawText
 from mistletoe.block_token import BlockToken, tokenize
 
