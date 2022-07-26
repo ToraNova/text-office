@@ -14,7 +14,7 @@ def generate(inargs):
     severity, score, score_print, vector, color = get_ssvc(args.cvss)
 
     finding_name = args.name
-    clean_name = args.name.casefold().translate(dict.fromkeys(map(ord, u' \n#/\\()[]{}<>-')))
+    clean_name = args.name.casefold().translate(dict.fromkeys(map(ord, u' \n#/\\()[]{}<>-.')))
     strscore = str(score).replace('.','')
     mdfile_name = f'{strscore}_{clean_name}.md'
 

@@ -155,6 +155,9 @@ class Renderer(BaseRenderer):
     def render_image_tag(self, token):
         up = urlparse(token.format_value_raw)
 
+    def render_block_code(self, token):
+        raise NotImplementedError('block_codes not supported, use <font name="Lucida Sans Typewriter"></font> instead')
+
     def render_raw_text(self, token):
         # add run to last added paragraph
         self.runs.append(self.paras[-1].add_run())

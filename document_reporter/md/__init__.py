@@ -28,7 +28,7 @@ def docx_generate(mdarg, encoding='utf-8', **kwargs):
                     app_doc = file_generate(md, DocxRenderer, encoding, **kwargs)
                     main_comp.append(app_doc)
                 except Exception as e:
-                    utils.show_error(mdarg[0], e)
+                    utils.show_error(md, e)
 
             return main_comp.doc
         except Exception as e:
