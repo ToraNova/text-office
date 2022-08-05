@@ -6,10 +6,11 @@ _path_ = os.path.realpath(__file__)
 _base_, _file_ = os.path.split(_path_)
 _lib_ = _base_[:-_base_[::-1].find(os.path.sep)-1]
 prj_root_path = _lib_[:-_lib_[::-1].find(os.path.sep)]
+boiler_template_path = os.path.join(prj_root_path, 'boiler_templates')
 
-_mainmod_path_ = os.path.abspath(sys.modules['__main__'].__file__)
-_mainmod_base_, _mainmod_file_ = os.path.split(_mainmod_path_)
-boiler_template_path = os.path.join(_mainmod_base_, 'boiler_templates')
+#_mainmod_path_ = os.path.abspath(sys.modules['__main__'].__file__)
+#_mainmod_base_, _mainmod_file_ = os.path.split(_mainmod_path_)
+#boiler_template_path = os.path.join(_mainmod_base_, 'boiler_templates')
 
 def parse_kv_pairs(text, item_sep=",", value_sep="="):
     """Parse key-value pairs from a shell-like text."""
