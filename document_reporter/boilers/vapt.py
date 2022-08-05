@@ -22,8 +22,16 @@ def generate(inargs):
     if not tplfn.endswith('.md'):
         tplfn += '.md'
 
+    if not os.path.isfile(tplfn):
+        print(f"cannot find boiler template '{tplfn}' in current working directory, defaulting to built-ins.")
+        tplfn = os.path.join(boiler_template_path, tplfn)
+
+    if not os.path.isfile(tplfn):
+        raise FileExistsError(f"cannot find boiler template '{tplfn}' in built-in templates dir.")
+
     print('creating boilerplate markdown with:', tplfn, severity, score, vector, color)
-    with open(os.path.join(boiler_template_path, tplfn), 'r') as tpl:
+
+    with open(tplfn, 'r') as tpl:
         tplstr = Template(tpl.read())
 
     res = tplstr.substitute(
