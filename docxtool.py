@@ -46,7 +46,7 @@ elif args.operation in ['mktpl']:
 
 else:
     if len(args.inputs) < 1:
-        exit()
+        exit('no inputs. use -h for help.')
 
     docx_opts = {}
     if args.docx_opts is not None:
