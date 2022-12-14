@@ -1,0 +1,25 @@
+# ignore compiled bytecode
+*.pyc
+__pycache__/
+
+# virtualenv
+lib64
+lib/*
+include/*
+bin/*
+
+dist/
+build/
+*.egg-info/
+
+*.docx
+*.pdf
+template.checklist.json
+dev.db
+uploads/*
+tmp/*
+
+# template stuff
+boiler_templates/*
+!boiler_templates/.gitkeep
+!boiler_templates/dtpt-1.md
