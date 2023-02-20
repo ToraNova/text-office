@@ -99,7 +99,9 @@ absolute path image, default image width
 ![altxt](../../Pictures/fun/chad.jpg "TODO: caption for this image")
 
 these images has fixed width 10cm, with aspect ratio maintained
-<img width=10cm>![](../../Pictures/fun/chad.jpg "TODO: caption for this image")</img>
+<img width=10cm>
+![](../../Pictures/fun/chad.jpg "TODO: caption for this image")
+</img>
 
 <align center>
 <img width=10cm>![](../../Pictures/fun/doomer.jpg "TODO: caption for this image")</img>
@@ -133,6 +135,7 @@ these images has fixed width 10cm, with aspect ratio maintained
 ## table with style (Table Grid)
 
 <table style='Table Grid'>
+
 | Col1 | Col2 |
 | ---- | ---- |
 | abcd | efgh |
@@ -140,11 +143,13 @@ these images has fixed width 10cm, with aspect ratio maintained
 | qwer | <font color=green>xxxxxxxxxxxxx</font> |
 | qwer | <font name=Arial><b>xxxxxxxxxxxxx</b></font> |
 | img | <img width=5cm>![](../../Pictures/fun/wojak.jpg)</img><br>test in newline |
+
 </table>
 
 ## table with style and custom column width
 
 <table style='Table Grid' column_widths='5cm, 8cm, 1cm'>
+
 | Col1 | Col2 | Col3 |
 | ---- | ---- | --- |
 | abcd | efgh | abc
@@ -152,4 +157,5 @@ these images has fixed width 10cm, with aspect ratio maintained
 | qwer | <font color=blue>xxxxxxxxxxxxx</font> | |
 | qwer | <font name=Arial><b>xxxxxxxxxxxxx</b></font> | |
 | img | <img width=5cm>![](../../Pictures/fun/wojak.jpg)</img><br>test in newline | |
+
 </table>

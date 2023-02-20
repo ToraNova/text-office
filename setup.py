@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-_version = '0.0.5'
+_version = '0.0.6'
 _packages = find_packages()
 
 setup(
@@ -12,7 +12,7 @@ setup(
     author_email='chia_jason96@live.com',
     url='https://github.com/toranova/document-reporter/',
     download_url='https://github.com/ToraNova/document-reporter/archive/refs/tags/v%s.tar.gz' % _version,
-    license='MIT',
+    license='AGPL-3.0-or-later',
     include_package_data=True,
     data_files=[('boiler_templates', ['boiler_templates/dtpt-1.md'])],
     zip_safe=False,
@@ -28,7 +28,7 @@ setup(
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
         "Operating System :: OS Independent",
         "Intended Audience :: Developers",
     ],
