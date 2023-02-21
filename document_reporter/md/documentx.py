@@ -179,7 +179,8 @@ class Renderer(BaseRenderer):
         if self.docx_opts.get('error_on_blockcode'):
             raise NotImplementedError('block_codes not supported, use <font name="Lucida Sans Typewriter"></font> instead')
         else:
-            self.render_raw_text(token.children[0])
+            # just render as-is on ms-docx
+            self.render_paragraph(token)
 
     def render_raw_text(self, token):
         # add run to last added paragraph
@@ -366,6 +367,7 @@ class Renderer(BaseRenderer):
 
     def populate_caption(self, caption_type, caption_string, align=None):
         tcpar = self.docx.add_paragraph(style='Caption').clear()
+        self.paras.append(tcpar)
         format_paragraph(tcpar, align=align)
         try:
             _hp = int(self.docx_opts['caption_prefix_heading'])
@@ -439,5 +441,3 @@ class Renderer(BaseRenderer):
             _align = map[token.format['align']]
 
         self.populate_and_format_paras(token, style=_style, spacing=_spacing, before=_before, after=_after, align=_align)
-
-

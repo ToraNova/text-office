@@ -36,7 +36,7 @@ Checkout the walkthrough for a use-case creating a penetration testing report us
 ## Markdown Samples
 Here are some markdown samples.
 
-1. [messy-all](samples/basic1.md)
+1. [markdown + docx](samples/dual.md)
 2. [tables](samples/tables.md)
 3. [figures](samples/figures.md)
 4. [lists](samples/lists.md)
