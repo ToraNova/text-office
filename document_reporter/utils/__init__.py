@@ -53,6 +53,14 @@ def parse_kv_pairs(text, item_sep=",", value_sep="="):
         raise ValueError(f'attribute error: {text}')
 
 
+def parse_bool(val):
+    if isinstance(val, str):
+        val = val.casefold()
+    if val in [1, True, '1', 'yes', 'true']:
+        return True
+    return False
+
+
 def warn_invalid_opts(tag, valid_list, opt_dict):
     for k in opt_dict:
         if k not in valid_list:

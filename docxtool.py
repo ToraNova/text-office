@@ -35,7 +35,7 @@ parser.add_argument('--nosort', help='do not sort input naturally', action='stor
 parser.add_argument('-op', '--operation', help='type of operation to do: (generate), join/concat, mktpl, substitute', type=str, default='generate')
 parser.add_argument('-o', '--output', help='output docx path', type=str, default='output.docx')
 parser.add_argument('-t', '--template', help='template docx path', type=str)
-parser.add_argument('-D', '--docx_opts', help='key-value pair of docx options (e.g., caption_prefix_heading=1)', type=str)
+parser.add_argument('-D', '--docx_opts', help='key-value pair of docx options (e.g., caption_prefix_heading=1, prompt_updatefield=no)', type=str)
 parser.add_argument('--rel_root', help='relative root (for images, attachments)', type=str)
 args = parser.parse_args()
 
@@ -59,19 +59,6 @@ else:
 
 docx = None
 _module = md
-
-if args.operation in ['stats', 'analysis']:
-    fltlist = []
-    for fn in inlist:
-        if fn.endswith('.docx'):
-            fltlist.append(fn)
-
-    res = stats.analyse(fltlist)
-    exit('work-in-progress.')
-
-if args.operation in ['substitute', 'sub']:
-    _module = sub
-
 
 if args.operation in ['concat', 'join']:
     docx = utils.docx_helper.concat_docx(inlist)

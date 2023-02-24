@@ -17,6 +17,7 @@ Copyright (C) 2023 ToraNova
 
 import re
 import webcolors
+import lxml
 from docx import Document
 from docxcompose.composer import Composer
 from docx.oxml.shared import OxmlElement
@@ -31,6 +32,7 @@ from docx.enum.dml import MSO_THEME_COLOR_INDEX
 from docx.shared import Pt, Inches, Cm, Mm, RGBColor
 from docx.styles.styles import Styles
 from docx.oxml.xmlchemy import serialize_for_reading
+
 
 def format_run(run, bold=None, italic=None, underline=None, strike=None, color=None, size=None, name=None, style=None):
     if bold is not None:
@@ -192,14 +194,14 @@ def set_paranumpr(para, numid=3, ilvl=0):
     npr.get_or_add_numId().val = numid
     npr.get_or_add_ilvl().val = ilvl
 
-def make_figure_caption(run, include_heading=0):
+def make_caption(run, include_heading=0, caption_type='Figure'):
     '''
     make the run a reference caption. set include_heading=1 to do smth like
     Figure x-y, where the x is the heading numbering to follow, and y the n-th figure under heading x
     '''
     r = run._r
 
-    _strseq = f' SEQ Figure \\* ARABIC '
+    _strseq = f' SEQ {caption_type} \\* ARABIC '
     if isinstance(include_heading, int) and include_heading > 0:
         fldChar = OxmlElement('w:fldChar')
         fldChar.set(qn('w:fldCharType'), 'begin')
@@ -271,7 +273,49 @@ def concat_docx(files):
         return main_c.doc
     raise TypeError('input to concat_docx should be a list')
 
-# NOT INCORPORATED INTO CORE YET-------------------------------------------------
+def set_updatefields(docx, val="true"):
+    # https://github.com/elapouya/python-docx-template/issues/151#issuecomment-442722594
+    namespace = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    # add child to doc.settings element
+    element_updatefields = lxml.etree.SubElement(
+        docx.settings.element, f"{namespace}updateFields"
+    )
+    element_updatefields.set(f"{namespace}val", val)
+
+def insert_TOC(run, prompt_update):
+    _add_lox(run, f'TOC \\o "1-3" \\h \\z \\u', prompt_update)
+
+def insert_LOT(run, prompt_update):
+    _add_lox(run, f'TOC \\h \\z \\c "Table"', prompt_update)
+
+def insert_LOF(run, prompt_update=True):
+    _add_lox(run, f'TOC \\h \\z \\c "Figure"', prompt_update)
+
+def _add_lox(run, ist, prompt_update):
+    # https://github.com/xiaominzhaoparadigm/python-docx-add-list-of-tables-figures/blob/master/LOT.py
+    fldChar = OxmlElement('w:fldChar')
+    fldChar.set(qn('w:fldCharType'), 'begin')
+    # uncomment the following line to prompt user to update the field
+    if prompt_update:
+        fldChar.set(qn('w:dirty'), 'true')
+    instrText = OxmlElement('w:instrText')
+    instrText.set(qn('xml:space'), 'preserve')
+    instrText.text = ist
+    fldChar2 = OxmlElement('w:fldChar')
+    fldChar2.set(qn('w:fldCharType'), 'separate')
+    fldChar3 = OxmlElement('w:t')
+    fldChar3.text = "Right-click to update field."
+    fldChar2.append(fldChar3)
+
+    fldChar4 = OxmlElement('w:fldChar')
+    fldChar4.set(qn('w:fldCharType'), 'end')
+
+    run._r.append(fldChar)
+    run._r.append(instrText)
+    run._r.append(fldChar2)
+    run._r.append(fldChar4)
+
+# NOT INCORPORATED YET-------------------------------------------------
 
 #def set_border(cell, **kwargs):
 #    """

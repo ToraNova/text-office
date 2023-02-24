@@ -48,6 +48,10 @@ class KeyValueMixin:
         #        continue
         #    self.format[_wl[0].strip().casefold()] = _wl[1].strip()
 
+class NoAttrFormatTag(SpanToken):
+    parse_group = 1
+
+
 class FormatTag(SpanToken):
     parse_group = 2
 
@@ -59,8 +63,11 @@ class FormatTag(SpanToken):
         # do not define children ourselves, allow for nested formats
         #self.children = (RawText(match.group(2) if match.group(2) is not None else match.group(4)),)
 
-class NoAttrFormatTag(SpanToken):
-    parse_group = 1
+
+class NoBodyFormatTag(FormatTag):
+    parse_group = 0
+    parse_inner = False
+
 
 class KeyValueFormatTag(KeyValueMixin, FormatTag):
     def __init__(self, match):
@@ -94,20 +101,27 @@ class ImageTag(KeyValueFormatTag):
 class CellTag(KeyValueFormatTag):
     pattern = re.compile(_build_regex_ftag_pattern('cell'), re.DOTALL)
 
-class HorizontalRuleTag(FormatTag):
-    parse_group = 0
-    parse_inner = False
+class HorizontalRuleTag(NoBodyFormatTag):
     pattern = re.compile(_build_regex_ftag_uni_pattern('hr'))
 
-class LineBreakTag(FormatTag):
-    parse_group = 0
-    parse_inner = False
+class LineBreakTag(NoBodyFormatTag):
     pattern = re.compile(_build_regex_ftag_uni_pattern('br'))
 
-class PageBreakTag(FormatTag):
-    parse_group = 0
-    parse_inner = False
+class PageBreakTag(NoBodyFormatTag):
     pattern = re.compile(_build_regex_ftag_uni_pattern('pgbr'))
+
+class TOCTag(NoBodyFormatTag):
+    pattern = re.compile(_build_regex_ftag_uni_pattern('toc'))
+
+class LOTTag(NoBodyFormatTag):
+    pattern = re.compile(_build_regex_ftag_uni_pattern('lot'))
+
+class LOFTag(NoBodyFormatTag):
+    pattern = re.compile(_build_regex_ftag_uni_pattern('lof'))
+
+class SectionBreakTag(NoBodyFormatTag):
+    pattern = re.compile(_build_regex_ftag_uni_pattern('secbr'))
+
 
 class FormatBlockTag(BlockToken):
 
@@ -120,7 +134,8 @@ class FormatBlockTag(BlockToken):
             self.format_value = self.format_value_raw.casefold()
         lines[0] = lines[0][start_token.span()[1]:]
         if len(lines[-1].strip()) < 1:
-            raise Exception(f'invalid block tag "{self.tag}": can\'t find end tag, did you include a newline after the start tag?')
+            print(lines[-1])
+            raise Exception(f'invalid block tag "{self.tag}": can\'t find end tag, did you include a newline after the start tag/before the end tag (at least 2 lines required)?')
         end_token =re.search(f'</{self.tag}>', lines[-1])
         lines[-1] = lines[-1][:end_token.span()[0]]
         super().__init__(lines, tokenize)

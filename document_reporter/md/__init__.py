@@ -35,6 +35,7 @@ def file_generate(in_path, renderer, encoding='utf-8', **kwargs):
             return outfile
 
 def docx_generate(mdarg, encoding='utf-8', **kwargs):
+
     if isinstance(mdarg, list) and len(mdarg) > 0:
         try:
             main_doc = file_generate(mdarg[0], DocxRenderer, encoding, **kwargs)
@@ -45,11 +46,17 @@ def docx_generate(mdarg, encoding='utf-8', **kwargs):
                     app_doc = file_generate(md, DocxRenderer, encoding, **kwargs)
                     main_comp.append(app_doc)
                 except Exception as e:
+                    # ok to ignore
                     utils.show_error(md, e)
 
-            return main_comp.doc
+            outf = main_comp.doc
         except Exception as e:
+            # if something messes up here, we must raise
             utils.show_error(mdarg[0], e)
+            raise e
 
     else:
-        return file_generate(mdarg, DocxRenderer, encoding, **kwargs)
+        outf = file_generate(mdarg, DocxRenderer, encoding, **kwargs)
+
+    #utils.docx_helper.set_updatefields(outf, 'true')
+    return outf

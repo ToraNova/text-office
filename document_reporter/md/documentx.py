@@ -31,18 +31,19 @@ from docx import Document
 from docx.shared import Pt, Inches, Cm, Mm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
-
-from ..utils import warn_invalid_opts
+from docx.enum.section import WD_SECTION
+from ..utils import warn_invalid_opts, parse_bool
 from ..utils.docx_helper import (
         format_paragraph, format_run, format_table, insert_hrule,
         insert_hyperlink, parse_sizespec, assign_numbering,
-        make_figure_caption, shade_cell, delete_paragraph, set_figure_border, parse_color
+        make_caption, shade_cell, delete_paragraph, set_figure_border, parse_color, insert_LOF, insert_LOT, insert_TOC,
         )
 
 from .format_tag import (
-        HorizontalRuleTag, LineBreakTag, PageBreakTag,
+        HorizontalRuleTag, LineBreakTag, PageBreakTag, SectionBreakTag,
         BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag,
-        FontTag, ImageTag, CellTag
+        FontTag, ImageTag, CellTag,
+        TOCTag, LOTTag, LOFTag,
         )
 
 from .format_tag import (
@@ -57,9 +58,10 @@ class Renderer(BaseRenderer):
         '''
         self._suppress_ptag_stack = [False]
         super().__init__(*chain(([
-            HorizontalRuleTag, LineBreakTag, PageBreakTag,
+            HorizontalRuleTag, LineBreakTag, PageBreakTag, SectionBreakTag,
             BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag, FontTag, ImageTag, CellTag,
             CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag,
+            TOCTag, LOTTag, LOFTag,
         ]), extras))
         self.rel_root = os.getcwd() if rel_root is None else rel_root
         self.docx_template = docx_template
@@ -176,7 +178,8 @@ class Renderer(BaseRenderer):
         up = urlparse(token.format_value_raw)
 
     def render_block_code(self, token):
-        if self.docx_opts.get('error_on_blockcode'):
+        _dxopt = parse_bool(self.docx_opts.get('error_on_blockcode', False))
+        if _dxopt:
             raise NotImplementedError('block_codes not supported, use <font name="Lucida Sans Typewriter"></font> instead')
         else:
             # just render as-is on ms-docx
@@ -308,11 +311,40 @@ class Renderer(BaseRenderer):
     def render_page_break_tag(self, token):
         self.docx.add_page_break()
 
+    def render_toc_tag(self, token):
+        self.runs.append(self.paras[-1].add_run())
+        _dxopt = parse_bool(self.docx_opts.get('prompt_updatefield', True))
+        insert_TOC(self.runs[-1], _dxopt)
+
+    def render_lot_tag(self, token):
+        self.runs.append(self.paras[-1].add_run())
+        _dxopt = parse_bool(self.docx_opts.get('prompt_updatefield', True))
+        insert_LOT(self.runs[-1], _dxopt)
+
+    def render_lof_tag(self, token):
+        self.runs.append(self.paras[-1].add_run())
+        _dxopt = parse_bool(self.docx_opts.get('prompt_updatefield', True))
+        insert_LOF(self.runs[-1], _dxopt)
+
     def render_line_break_tag(self, token):
         #self.runs[-1].text += '\n'
         if len(self.runs) < 1:
             self.runs.append(self.paras[-1].add_run())
         self.runs[-1].add_break()
+
+    def render_section_break_tag(self, token):
+        #self.sections.append(self.docx.add_section(WD_SECTION.ODD_PAGE))
+        map = {
+            'oddpage': WD_SECTION.ODD_PAGE,
+            'evenpage': WD_SECTION.EVEN_PAGE,
+            'newpage': WD_SECTION.NEW_PAGE,
+            'newcol': WD_SECTION.NEW_COLUMN,
+            'cont': WD_SECTION.CONTINUOUS,
+            None: WD_SECTION.NEW_PAGE,
+        }
+        if token.format_value not in map:
+            raise KeyError(f'no such secbr type: {token.format_value} {list(map.keys())}')
+        self.docx.add_section(map[token.format_value])
 
     def render_comment_block_tag(self, token):
         # do nothing
@@ -353,7 +385,7 @@ class Renderer(BaseRenderer):
             'justify': WD_ALIGN_PARAGRAPH.JUSTIFY,
         }
         if token.format_value not in map:
-            raise KeyError(f'no such alignment type: {token.format_value} (center, left, right, justify)')
+            raise KeyError(f'no such alignment type: {token.format_value} {list(map.keys())}')
         self.populate_and_format_paras(token, align=map[token.format_value])
 
     def render_font_tag(self, token):
@@ -369,11 +401,8 @@ class Renderer(BaseRenderer):
         tcpar = self.docx.add_paragraph(style='Caption').clear()
         self.paras.append(tcpar)
         format_paragraph(tcpar, align=align)
-        try:
-            _hp = int(self.docx_opts['caption_prefix_heading'])
-            make_figure_caption(tcpar.add_run(f'{caption_type} '), _hp)
-        except (KeyError, ValueError) as e:
-            make_figure_caption(tcpar.add_run(f'{caption_type} '), 0)
+        _dxopt = int(self.docx_opts.get('caption_prefix_heading', 0))
+        make_caption(tcpar.add_run(f'{caption_type} '), _dxopt, caption_type)
 
         tcrun = tcpar.add_run(f': {caption_string}')
 
@@ -437,7 +466,7 @@ class Renderer(BaseRenderer):
                 'justify': WD_ALIGN_PARAGRAPH.JUSTIFY,
             }
             if token.format['align'] not in map:
-                raise KeyError(f'no such alignment type: {token.format_value} (center, left, right, justify)')
+                raise KeyError(f'no such alignment type: {token.format_value} {list(map.keys())}')
             _align = map[token.format['align']]
 
         self.populate_and_format_paras(token, style=_style, spacing=_spacing, before=_before, after=_after, align=_align)
