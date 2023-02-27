@@ -71,8 +71,29 @@ def parse_bool(val):
         return True
     return False
 
+class InvalidOption(KeyError):
+    def __init__(self, tag, key, valids):
+        super().__init__(f'invalid opt on tag {tag}: {key} {valids}')
 
-def warn_invalid_opts(tag, valid_list, opt_dict):
+class InvalidValue(ValueError):
+    def __init__(self, attr, value, valids):
+        super().__init__(f'invalid value on attr {attr}: {value} {valids}')
+
+
+def check_valid_opts(tag, valid_list, opt_dict):
     for k in opt_dict:
         if k not in valid_list:
-            log.warn(f'warning for "{tag}", invalid opt; {k}')
+            raise InvalidOption(tag,k, valid_list)
+
+def check_valid_value(attr, vmap, v):
+    if v not in vmap:
+        raise InvalidValue(attr, v, list(vmap.keys()))
+
+    #if key not in map:
+    #    raise KeyError(f'invalid value on attr: {token.format["tabstop"]} {list(map.keys())}')
+    #        map = {
+    #            'center': WD_TAB_ALIGNMENT.CENTER,
+    #            'left': WD_TAB_ALIGNMENT.LEFT,
+    #            'right': WD_TAB_ALIGNMENT.RIGHT,
+    #        }
+    #        if kv['tabstop'] not in map:

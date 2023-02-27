@@ -29,25 +29,35 @@ from mistletoe.base_renderer import BaseRenderer
 
 from docx import Document
 from docx.shared import Pt, Inches, Cm, Mm
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.section import WD_SECTION
-from ..utils import warn_invalid_opts, parse_bool
+from ..utils import (
+        check_valid_opts, check_valid_value,
+        parse_bool,
+        )
 from ..utils.docx_helper import (
         format_paragraph, format_run, format_table, insert_hrule,
         insert_hyperlink, parse_sizespec, assign_numbering,
         make_caption, shade_cell, delete_paragraph, set_figure_border, parse_color, insert_LOF, insert_LOT, insert_TOC,
         )
 
+from .helper import (
+        set_attr_recursively,
+        ensure_tabstop,
+        ensure_align,
+        )
+
 from .format_tag import (
         HorizontalRuleTag, LineBreakTag, PageBreakTag, SectionBreakTag,
         BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag,
-        FontTag, ImageTag, CellTag,
+        FontTag, ImageTag, CellTag, InsertTabTag,
         TOCTag, LOTTag, LOFTag,
         )
 
 from .format_tag import (
-        CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag
+        CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag,
+        FooterBlockTag, HeaderBlockTag,
         )
 
 class Renderer(BaseRenderer):
@@ -58,9 +68,10 @@ class Renderer(BaseRenderer):
         '''
         self._suppress_ptag_stack = [False]
         super().__init__(*chain(([
-            HorizontalRuleTag, LineBreakTag, PageBreakTag, SectionBreakTag,
+            HorizontalRuleTag, LineBreakTag, PageBreakTag, SectionBreakTag, InsertTabTag,
             BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag, FontTag, ImageTag, CellTag,
             CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag,
+            FooterBlockTag, HeaderBlockTag,
             TOCTag, LOTTag, LOFTag,
         ]), extras))
         self.rel_root = os.getcwd() if rel_root is None else rel_root
@@ -296,10 +307,21 @@ class Renderer(BaseRenderer):
 
     def render_paragraph(self, token):
         # for all span tokens
-        if hasattr(token, 'docx_style') and isinstance(token.docx_style, str):
-            self.paras.append(self.docx.add_paragraph(style=token.docx_style).clear())
+
+        render_ptr = self.docx
+        if hasattr(token, 'render_to') and isinstance(token.render_to, str):
+            if token.render_to == 'header':
+                render_ptr = self.docx.sections[-1].header
+
+            elif token.render_to == 'footer':
+                render_ptr = self.docx.sections[-1].footer
         else:
-            self.paras.append(self.docx.add_paragraph().clear())
+            token.render_to = 'body'
+
+        if hasattr(token, 'docx_style') and isinstance(token.docx_style, str):
+            self.paras.append(render_ptr.add_paragraph(style=token.docx_style).clear())
+        else:
+            self.paras.append(render_ptr.add_paragraph().clear())
         self.render_inner(token)
 
     def render_horizontal_rule_tag(self, token):
@@ -332,9 +354,15 @@ class Renderer(BaseRenderer):
             self.runs.append(self.paras[-1].add_run())
         self.runs[-1].add_break()
 
+    def render_insert_tab_tag(self, token):
+        # insert a tab character
+        if len(self.runs) < 1:
+            self.runs.append(self.paras[-1].add_run())
+        self.runs[-1].add_tab()
+
     def render_section_break_tag(self, token):
         #self.sections.append(self.docx.add_section(WD_SECTION.ODD_PAGE))
-        map = {
+        vmap = {
             'oddpage': WD_SECTION.ODD_PAGE,
             'evenpage': WD_SECTION.EVEN_PAGE,
             'newpage': WD_SECTION.NEW_PAGE,
@@ -342,9 +370,8 @@ class Renderer(BaseRenderer):
             'cont': WD_SECTION.CONTINUOUS,
             None: WD_SECTION.NEW_PAGE,
         }
-        if token.format_value not in map:
-            raise KeyError(f'no such secbr type: {token.format_value} {list(map.keys())}')
-        self.docx.add_section(map[token.format_value])
+        check_valid_value('secbr', vmap, token.format_value)
+        self.docx.add_section(vmap[token.format_value])
 
     def render_comment_block_tag(self, token):
         # do nothing
@@ -378,19 +405,18 @@ class Renderer(BaseRenderer):
 
     def render_align_block_tag(self, token):
         # NO OPTIONS FOR THIS!
-        map = {
+        vmap = {
             'center': WD_ALIGN_PARAGRAPH.CENTER,
             'left': WD_ALIGN_PARAGRAPH.LEFT,
             'right': WD_ALIGN_PARAGRAPH.RIGHT,
             'justify': WD_ALIGN_PARAGRAPH.JUSTIFY,
         }
-        if token.format_value not in map:
-            raise KeyError(f'no such alignment type: {token.format_value} {list(map.keys())}')
-        self.populate_and_format_paras(token, align=map[token.format_value])
+        check_valid_value('align', vmap, token.format_value)
+        self.populate_and_format_paras(token, align=vmap[token.format_value])
 
     def render_font_tag(self, token):
         _valid_opts = ['name', 'size', 'color']
-        warn_invalid_opts(self.run_tag, _valid_opts, token.format)
+        check_valid_opts(self.run_tag, _valid_opts, token.format)
 
         _name = token.format['name'] if 'name' in token.format else None
         _size = parse_sizespec(token.format['size']) if 'size' in token.format else None
@@ -408,7 +434,7 @@ class Renderer(BaseRenderer):
 
     def render_table_block_tag(self, token):
         _valid_opts = ['style', 'column_widths', 'caption']
-        warn_invalid_opts(self.run_tag, _valid_opts, token.format)
+        check_valid_opts(self.run_tag, _valid_opts, token.format)
 
         _style = token.format['style'] if 'style' in token.format else None
         _colwidths = None
@@ -428,7 +454,7 @@ class Renderer(BaseRenderer):
 
     def render_cell_tag(self, token):
         _valid_opts = ['color']
-        warn_invalid_opts(self.run_tag, _valid_opts, token.format)
+        check_valid_opts(self.run_tag, _valid_opts, token.format)
 
         if len(self.cells) < 1:
             return
@@ -441,7 +467,7 @@ class Renderer(BaseRenderer):
 
     def render_image_tag(self, token):
         _valid_opts = ['width', 'border_width', 'border_color']
-        warn_invalid_opts(self.run_tag, _valid_opts, token.format)
+        check_valid_opts(self.run_tag, _valid_opts, token.format)
 
         _width = parse_sizespec(token.format['width']) if 'width' in token.format else None
         _border_width = parse_sizespec(token.format['border_width']) if 'border_width' in token.format else None
@@ -450,23 +476,35 @@ class Renderer(BaseRenderer):
 
     def render_paragraph_block_tag(self, token):
         _valid_opts = ['spacing', 'before', 'after', 'style', 'align']
-        warn_invalid_opts(self.run_tag, _valid_opts, token.format)
+        check_valid_opts(self.run_tag, _valid_opts, token.format)
 
         _spacing = parse_sizespec(token.format['spacing']) if 'spacing' in token.format else None
         _before = parse_sizespec(token.format['before']) if 'before' in token.format else None
         _after = parse_sizespec(token.format['after']) if 'after' in token.format else None
         _style = token.format['style'] if 'style' in token.format else None
-
-        _align = None
-        if 'align' in token.format:
-            map = {
-                'center': WD_ALIGN_PARAGRAPH.CENTER,
-                'left': WD_ALIGN_PARAGRAPH.LEFT,
-                'right': WD_ALIGN_PARAGRAPH.RIGHT,
-                'justify': WD_ALIGN_PARAGRAPH.JUSTIFY,
-            }
-            if token.format['align'] not in map:
-                raise KeyError(f'no such alignment type: {token.format_value} {list(map.keys())}')
-            _align = map[token.format['align']]
+        _align = ensure_align(token)
 
         self.populate_and_format_paras(token, style=_style, spacing=_spacing, before=_before, after=_after, align=_align)
+
+    def render_header_block_tag(self, token):
+        _tsalign = ensure_tabstop(token, self.docx.sections[-1])
+        set_attr_recursively(token, block_token.Paragraph, 'render_to', 'header')
+        self.populate_and_format_paras(token, add_tabstops=_tsalign)
+
+    def render_footer_block_tag(self, token):
+        _tsalign = ensure_tabstop(token, self.docx.sections[-1])
+        set_attr_recursively(token, block_token.Paragraph, 'render_to', 'footer')
+        self.populate_and_format_paras(token, add_tabstops=_tsalign)
+
+        #ts_ptr = self.paras[-1].paragraph_format.tab_stops
+        #map = {
+        #    'center': WD_TAB_ALIGNMENT.CENTER,
+        #    'left': WD_TAB_ALIGNMENT.LEFT,
+        #    'right': WD_TAB_ALIGNMENT.RIGHT,
+        #}
+        #if token.format_value not in map:
+        #    raise KeyError(f'no such tabstop type: {token.format_value} {list(map.keys())}')
+
+        #self.runs[-1].add_tab()
+        #ts_ptr.add_tab_stop(Inches(self.docx.sections[-1].left_margin.inches), map[token.format_value])
+        #ts_ptr.add_tab_stop(Inches(0), map[token.format_value])

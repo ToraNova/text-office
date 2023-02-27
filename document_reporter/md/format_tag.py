@@ -39,7 +39,11 @@ def _build_regex_ftag_start_pattern(tag):
 
 class KeyValueMixin:
     def parse_format(self):
-        self.format = parse_kv_pairs(self.format_value_raw, item_sep=' \n\t')
+        if self.format_value_raw == '>':
+            # edge case 1, KeyValueFormatTag without attributes
+            self.format = {}
+        else:
+            self.format = parse_kv_pairs(self.format_value_raw, item_sep=' \n\t')
         #fkv_list = self.format_value_raw.split(',')
         #self.format = {}
         #for kv_pair in fkv_list:
@@ -106,6 +110,9 @@ class HorizontalRuleTag(NoBodyFormatTag):
 
 class LineBreakTag(NoBodyFormatTag):
     pattern = re.compile(_build_regex_ftag_uni_pattern('br'))
+
+class InsertTabTag(NoBodyFormatTag):
+    pattern = re.compile(_build_regex_ftag_uni_pattern('tab'))
 
 class PageBreakTag(NoBodyFormatTag):
     pattern = re.compile(_build_regex_ftag_uni_pattern('pgbr'))
@@ -188,3 +195,9 @@ class TableBlockTag(FormatKeyValueBlockTag):
 
 class ParagraphBlockTag(FormatKeyValueBlockTag):
     tag = 'para'
+
+class HeaderBlockTag(FormatKeyValueBlockTag):
+    tag = 'header'
+
+class FooterBlockTag(FormatKeyValueBlockTag):
+    tag = 'footer'

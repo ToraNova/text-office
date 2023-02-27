@@ -53,7 +53,7 @@ def format_run(run, bold=None, italic=None, underline=None, strike=None, color=N
         run.style = style
     return run
 
-def format_paragraph(para, style=None, align=None, spacing=None, before=None, after=None):
+def format_paragraph(para, style=None, align=None, spacing=None, before=None, after=None, add_tabstops=None):
     if style is not None:
         para.style = style
     if align is not None:
@@ -64,6 +64,9 @@ def format_paragraph(para, style=None, align=None, spacing=None, before=None, af
         para.paragraph_format.space_before = before
     if after is not None:
         para.paragraph_format.space_after = after
+    if add_tabstops is not None:
+        for ats in add_tabstops:
+            para.paragraph_format.tab_stops.add_tab_stop(*ats)
     return para
 
 def format_table(table, style=None, align=None, autofit=None, colwidths=None):

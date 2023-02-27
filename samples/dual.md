@@ -156,10 +156,6 @@ monospace font in markdown renders, normal styling in microsoft docx.
 This text in this paragraph is formatted to have spacing = 1, before 6pt. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 </para>
 
-<comment>
-This line break is required for markdown renderers to split the 2 paragraphs when we enclosed them with xml tags.</comment>
-<br>
-
 <para spacing=1.5 before=2pt>
 This text in this paragraph is formatted to have spacing = 1.5, before 2pt. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 </para>
