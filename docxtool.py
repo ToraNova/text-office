@@ -27,28 +27,64 @@ from document_reporter import (
         utils,
         )
 
+JOIN_OP = ['join', 'concat']
+LIST_OP = ['listonly', 'nogen']
+MKTP_OP = ['mktpl']
+
 parser = argparse.ArgumentParser()
 # single
 parser.add_argument('inputs', help='input files', type=str, nargs='*')
+parser.add_argument('-f', '--manifest', help='processing manifest', type=str)
 parser.add_argument('--ascending', help='sort in ascending order (if sorting)', action='store_true')
 parser.add_argument('--nosort', help='do not sort input naturally', action='store_true')
-parser.add_argument('-op', '--operation', help='type of operation to do: (generate), join/concat, mktpl, substitute', type=str, default='generate')
+parser.add_argument('-op', '--operation', help=f'type of operation to do: ({md.OPNAME}), {JOIN_OP}, {LIST_OP}, {MKTP_OP}', type=str, default='mdgen')
 parser.add_argument('-o', '--output', help='output docx path', type=str, default='output.docx')
 parser.add_argument('-t', '--template', help='template docx path', type=str)
-parser.add_argument('-D', '--docx_opts', help='key-value pair of docx options (e.g., caption_prefix_heading=1, prompt_updatefield=no)', type=str)
+parser.add_argument('-dxopt', '--docx_opts', help='key-value pair of docx options (e.g., caption_prefix_heading=1, prompt_updatefield=no)', type=str)
 parser.add_argument('--rel_root', help='relative root (for images, attachments)', type=str)
 args = parser.parse_args()
 
+docx = None
+
+# TODO: allow diff modules (e.g., substitute)
+_module = md
+
 inlist = []
-for inp in args.inputs:
-    if isfile(inp):
-        # is a file
-        inlist.append(inp)
-    else:
-        for _file in listdir(inp):
-            _filepath = join(inp, _file)
-            if isfile(_filepath):
-                inlist.append(_filepath)
+
+if args.manifest is not None:
+    # using a manifest file
+    if not isfile(args.manifest):
+        utils.log.critical('cannot open manifest for processing')
+        exit(1)
+
+    with open(args.manifest, 'r') as mfile:
+        for line in mfile:
+            line = line.strip()
+            if line.startswith('#'):
+                # ignore comments
+                continue
+
+            if line.isspace() or len(line) < 1:
+                # ignore whitelines
+                continue
+
+            if not isfile(line):
+                # raise error
+                utils.log.error(f'cannot open specified file in manifest "{args.manifest}" for processing: {line}')
+                continue
+
+            inlist.append(line)
+else:
+    # specifying directly from args
+    for inp in args.inputs:
+        if isfile(inp):
+            # is a file
+            inlist.append(inp)
+        else:
+            for _file in listdir(inp):
+                _filepath = join(inp, _file)
+                if isfile(_filepath) and _module.can_process(_filepath):
+                    inlist.append(_filepath)
 
 if args.nosort:
     # don't sort
@@ -57,19 +93,25 @@ else:
     # sort
     inlist = natsorted(inlist, reverse=not args.ascending)
 
-docx = None
-_module = md
 
-if args.operation in ['concat', 'join']:
+if args.operation in LIST_OP:
+    # list target files to process without processing
+    utils.log.info("the following markdown will be processed in order:")
+    for i in inlist:
+        utils.log.info(i)
+
+elif args.operation in JOIN_OP:
+    # concatenate docx
     docx = utils.docx_helper.concat_docx(inlist)
 
-elif args.operation in ['mktpl']:
+elif args.operation in MKTP_OP:
     # create template docx
     docx = Document()
 
 else:
-    if len(args.inputs) < 1:
-        exit('no inputs. use -h for help.')
+    if len(inlist) < 1:
+        utils.log.critical('no inputs')
+        exit(1)
 
     docx_opts = {}
     if args.docx_opts is not None:
@@ -84,5 +126,5 @@ else:
             )
 
 if isinstance(docx, _DOCX):
-    print('docx generated at', args.output)
+    utils.log.info(f'docx generated at {args.output}')
     docx.save(args.output)

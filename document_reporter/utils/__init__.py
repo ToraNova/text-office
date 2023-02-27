@@ -17,6 +17,7 @@ Copyright (C) 2023 ToraNova
 
 import os
 import sys
+import logging
 import traceback
 from shlex import shlex
 
@@ -31,8 +32,18 @@ _mainmod_base_, _mainmod_file_ = os.path.split(_mainmod_path_)
 _local_path_ = _mainmod_base_[:-_mainmod_base_[::-1].find(os.path.sep)-1]
 boiler_template_path_pip = os.path.join(_local_path_, 'boiler_templates')
 
+#log_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+log_formatter = logging.Formatter('%(message)s')
+log_handler = logging.StreamHandler(sys.stdout)
+log_handler.setLevel(logging.DEBUG)
+log_handler.setFormatter(log_formatter)
+
+log = logging.getLogger()
+log.setLevel(logging.DEBUG)
+log.addHandler(log_handler)
+
 def parse_kv_pairs(text, item_sep=",", value_sep="="):
-    """Parse key-value pairs from a shell-like text."""
+    """Parse key-value pairs from a shell-like text"""
     # initialize a lexer, in POSIX mode (to properly handle escaping)
     lexer = shlex(text, posix=True)
     # set ',' as whitespace for the lexer
@@ -64,9 +75,4 @@ def parse_bool(val):
 def warn_invalid_opts(tag, valid_list, opt_dict):
     for k in opt_dict:
         if k not in valid_list:
-            print(f'Warning for "{tag}", invalid opt; {k}')
-
-
-def show_error(tag, errmsg):
-    print(f'Exception for "{tag}", {errmsg};')
-    #traceback.print_exc()
+            log.warn(f'warning for "{tag}", invalid opt; {k}')

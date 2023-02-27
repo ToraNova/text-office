@@ -18,7 +18,7 @@ Copyright (C) 2023 ToraNova
 import argparse
 import os
 from string import Template
-from ..utils import boiler_template_path, boiler_template_path_pip
+from ..utils import boiler_template_path, boiler_template_path_pip, log
 from ..utils.vapt_helper import get_ssvc
 
 def generate(inargs):
@@ -42,16 +42,16 @@ def generate(inargs):
     btplfn = tplfn
 
     if not os.path.isfile(tplfn):
-        print(f"cannot find boiler template '{tplfn}' in current working directory, defaulting to built-ins.")
+        log.warn(f"cannot find boiler template '{tplfn}' in current working directory, defaulting to built-ins")
         tplfn = os.path.join(boiler_template_path, btplfn)
 
     if not os.path.isfile(tplfn):
         tplfn = os.path.join(boiler_template_path_pip, btplfn)
 
     if not os.path.isfile(tplfn):
-        raise FileExistsError(f"cannot find boiler template in built-in templates dir.")
+        raise FileExistsError(f"cannot find boiler template in built-in templates dir")
 
-    print('creating boilerplate markdown with:', tplfn, severity, score, vector, color)
+    log.info(f'creating boilerplate markdown with: {tplfn} {severity} {score} {vector} {color}')
 
     with open(tplfn, 'r') as tpl:
         tplstr = Template(tpl.read())

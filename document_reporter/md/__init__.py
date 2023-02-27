@@ -22,6 +22,14 @@ from .. import utils
 from .documentx import Renderer as DocxRenderer
 from docxcompose.composer import Composer
 
+OPNAME = [
+        'mdgen',
+        'markdown',
+        ]
+
+def can_process(fn):
+    return fn.endswith('.md')
+
 def file_generate(in_path, renderer, encoding='utf-8', **kwargs):
     """
     Converts markdown input to the output supported by the given renderer.
@@ -42,17 +50,13 @@ def docx_generate(mdarg, encoding='utf-8', **kwargs):
             main_comp = Composer(main_doc)
 
             for md in mdarg[1:]:
-                try:
-                    app_doc = file_generate(md, DocxRenderer, encoding, **kwargs)
-                    main_comp.append(app_doc)
-                except Exception as e:
-                    # ok to ignore
-                    utils.show_error(md, e)
+                app_doc = file_generate(md, DocxRenderer, encoding, **kwargs)
+                main_comp.append(app_doc)
 
             outf = main_comp.doc
         except Exception as e:
             # if something messes up here, we must raise
-            utils.show_error(mdarg[0], e)
+            # this is a fatal error
             raise e
 
     else:

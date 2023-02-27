@@ -20,7 +20,7 @@ Copyright (C) 2023 ToraNova
 # https://github.com/miyuchina/mistletoe/blob/master/mistletoe/html_renderer.py
 
 import re
-from ..utils import parse_kv_pairs, show_error
+from ..utils import parse_kv_pairs
 from mistletoe.span_token import SpanToken, RawText
 from mistletoe.block_token import BlockToken, tokenize
 
@@ -122,6 +122,10 @@ class LOFTag(NoBodyFormatTag):
 class SectionBreakTag(NoBodyFormatTag):
     pattern = re.compile(_build_regex_ftag_uni_pattern('secbr'))
 
+class NoNewLineException(Exception):
+
+    def __init__(self, tagname):
+        super().__init__(f'invalid block tag "{tagname}": can\'t find end tag, did you include a newline after the start tag/before the end tag (at least 2 lines required)?')
 
 class FormatBlockTag(BlockToken):
 
@@ -134,8 +138,7 @@ class FormatBlockTag(BlockToken):
             self.format_value = self.format_value_raw.casefold()
         lines[0] = lines[0][start_token.span()[1]:]
         if len(lines[-1].strip()) < 1:
-            print(lines[-1])
-            raise Exception(f'invalid block tag "{self.tag}": can\'t find end tag, did you include a newline after the start tag/before the end tag (at least 2 lines required)?')
+            raise NoNewLineException(self.tag)
         end_token =re.search(f'</{self.tag}>', lines[-1])
         lines[-1] = lines[-1][:end_token.span()[0]]
         super().__init__(lines, tokenize)

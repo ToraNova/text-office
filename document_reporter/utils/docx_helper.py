@@ -190,7 +190,6 @@ def assign_numbering(doc, para, anid, start=1, tierlvl=0):
 
 def set_paranumpr(para, numid=3, ilvl=0):
     npr = para._p.get_or_add_pPr().get_or_add_numPr()
-    print(numid, ilvl)
     npr.get_or_add_numId().val = numid
     npr.get_or_add_ilvl().val = ilvl
 

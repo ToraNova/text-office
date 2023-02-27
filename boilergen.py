@@ -16,11 +16,14 @@ Copyright (C) 2023 ToraNova
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
+
 import argparse
 from cvss import CVSS2, CVSS3
 
 import sys
 import importlib
+
+from document_reporter.utils import log
 
 parser = argparse.ArgumentParser()
 parser.add_argument('module', help='boilerplate generator module to use (e.g., vapt)', type=str)
@@ -31,6 +34,6 @@ try:
     boiler = importlib.import_module(importstr)
     boiler.generate(sys.argv[2:])
 except ImportError:
-    print(f'boilerplate module \'{args.module}\' not found.')
+    log.exception(f'boilerplate module \'{args.module}\' not found.')
 except Exception as e:
-    print('exception occured:', e)
+    log.exception('exception occured')
