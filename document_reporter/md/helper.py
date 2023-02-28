@@ -15,7 +15,7 @@ Copyright (C) 2023 ToraNova
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-from ..utils import check_valid_value
+from ..utils import ensure_valid_value
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.shared import Pt, Inches, Cm, Mm
 
@@ -40,7 +40,7 @@ def ensure_tabstop(token, cs):
     if 'tabstops' in token.format:
         out = []
         for t in token.format['tabstops'].split(','):
-            check_valid_value('tabstops', vmap, t)
+            ensure_valid_value('tabstops', vmap, t)
             out.append(vmap[t])
         return out
     return None
@@ -54,6 +54,6 @@ def ensure_align(token):
             'right': WD_ALIGN_PARAGRAPH.RIGHT,
             'justify': WD_ALIGN_PARAGRAPH.JUSTIFY,
         }
-        check_valid_value('align', vmap, token.format['align'])
+        ensure_valid_value('align', vmap, token.format['align'])
         return vmap[token.format['align']]
     return None

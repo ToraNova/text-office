@@ -1,14 +1,10 @@
-<header tabstops='center,right'>
-This is in the header<tab>M<tab>R
+<header tabstops='right,center'>
+HL<tab>HC<tab>HR
 </header>
 
 # This is in the body
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
-```
-test block code
-```
-
 <footer tabstops=right>
-Left<tab>Right
+FL<tab>FR
 </footer>

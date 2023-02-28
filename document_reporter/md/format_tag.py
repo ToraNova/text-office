@@ -24,33 +24,30 @@ from ..utils import parse_kv_pairs
 from mistletoe.span_token import SpanToken, RawText
 from mistletoe.block_token import BlockToken, tokenize
 
+_attr_matcher = r'(\S[^\<\>]*?)'
+
 def _build_regex_ftag_uni_pattern(tag):
-    return f'<{tag}\\s*(\\S.*?)?>'
+    return f'<{tag}\\s*{_attr_matcher}?>'
 
 def _build_regex_ftag_pattern(tag):
-    return f'<{tag}\\s*(\\S.*?)?>(.*?)</{tag}>'
+    return f'<{tag}\\s*{_attr_matcher}?>(.*?)</{tag}>'
 
 def _build_regex_ftag_noattr_pattern(tag):
     return f'<{tag}>(.*?)</{tag}>'
 
 def _build_regex_ftag_start_pattern(tag):
-    return f'<{tag}\\s*(\\S.*?)?[>\n]'
+    return f'<{tag}\\s*{_attr_matcher}?[>\n]'
     #return f'<{tag}\\s*(\\S.*?)?>\n'
 
 class KeyValueMixin:
     def parse_format(self):
+        self.format = {}
         if self.format_value_raw == '>':
             # edge case 1, KeyValueFormatTag without attributes
-            self.format = {}
+            pass
         else:
             self.format = parse_kv_pairs(self.format_value_raw, item_sep=' \n\t')
-        #fkv_list = self.format_value_raw.split(',')
-        #self.format = {}
-        #for kv_pair in fkv_list:
-        #    _wl = kv_pair.strip().split('=')
-        #    if len(_wl) < 2:
-        #        continue
-        #    self.format[_wl[0].strip().casefold()] = _wl[1].strip()
+
 
 class NoAttrFormatTag(SpanToken):
     parse_group = 1

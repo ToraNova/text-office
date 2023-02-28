@@ -40,6 +40,8 @@ Here are some markdown samples.
 2. [tables](samples/tables.md)
 3. [figures](samples/figures.md)
 4. [lists](samples/lists.md)
+5. [table-of-contents](samples/toc.md)
+6. [headers/footers](samples/headfoot.md)
 
 ## How is this different from pandoc?
 This tool supports use of formatting styles, image width adjustments, fonts etc.

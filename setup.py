@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-_version = '0.0.7'
+_version = '0.0.8'
 _packages = find_packages()
 
 setup(
@@ -14,7 +14,7 @@ setup(
     download_url='https://github.com/ToraNova/document-reporter/archive/refs/tags/v%s.tar.gz' % _version,
     license='AGPL-3.0-or-later',
     include_package_data=True,
-    data_files=[('boiler_templates', ['boiler_templates/dtpt-1.md', 'boiler_templates/images.md'])],
+    data_files=[('boiler_templates', ['boiler_templates/dtpt-1.md'])],
     zip_safe=False,
     keywords = ['docx', 'md', 'xml'],
     install_requires=[

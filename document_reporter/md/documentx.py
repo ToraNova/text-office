@@ -33,7 +33,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.section import WD_SECTION
 from ..utils import (
-        check_valid_opts, check_valid_value,
+        ensure_valid_opts, ensure_valid_value,
         parse_bool,
         )
 from ..utils.docx_helper import (
@@ -153,9 +153,6 @@ class Renderer(BaseRenderer):
         #self.render_inner(token)
         raise NotImplementedError("list_item is handled by list rendering")
 
-    def render_line_break(self, token):
-        self.runs[-1].add_break()
-
     def render_link(self, token):
         # TODO: allow alt-txt in links, see mistletoe docs on parser issues (token.title is empty!)
         if len(token.title) < 1:
@@ -195,11 +192,6 @@ class Renderer(BaseRenderer):
         else:
             # just render as-is on ms-docx
             self.render_paragraph(token)
-
-    def render_raw_text(self, token):
-        # add run to last added paragraph
-        self.runs.append(self.paras[-1].add_run())
-        self.runs[-1].add_text(token.content)
 
     def render_document(self, token):
         # create document from template
@@ -348,6 +340,15 @@ class Renderer(BaseRenderer):
         _dxopt = parse_bool(self.docx_opts.get('prompt_updatefield', True))
         insert_LOF(self.runs[-1], _dxopt)
 
+    def render_raw_text(self, token):
+        # add run to last added paragraph
+        self.runs.append(self.paras[-1].add_run())
+        self.runs[-1].add_text(token.content)
+
+    def render_line_break(self, token):
+        if len(self.runs) > 0:
+            self.runs[-1].add_break()
+
     def render_line_break_tag(self, token):
         #self.runs[-1].text += '\n'
         if len(self.runs) < 1:
@@ -370,7 +371,7 @@ class Renderer(BaseRenderer):
             'cont': WD_SECTION.CONTINUOUS,
             None: WD_SECTION.NEW_PAGE,
         }
-        check_valid_value('secbr', vmap, token.format_value)
+        ensure_valid_value('secbr', vmap, token.format_value)
         self.docx.add_section(vmap[token.format_value])
 
     def render_comment_block_tag(self, token):
@@ -411,12 +412,12 @@ class Renderer(BaseRenderer):
             'right': WD_ALIGN_PARAGRAPH.RIGHT,
             'justify': WD_ALIGN_PARAGRAPH.JUSTIFY,
         }
-        check_valid_value('align', vmap, token.format_value)
+        ensure_valid_value('align', vmap, token.format_value)
         self.populate_and_format_paras(token, align=vmap[token.format_value])
 
     def render_font_tag(self, token):
         _valid_opts = ['name', 'size', 'color']
-        check_valid_opts(self.run_tag, _valid_opts, token.format)
+        ensure_valid_opts(self.run_tag, _valid_opts, token.format)
 
         _name = token.format['name'] if 'name' in token.format else None
         _size = parse_sizespec(token.format['size']) if 'size' in token.format else None
@@ -434,7 +435,7 @@ class Renderer(BaseRenderer):
 
     def render_table_block_tag(self, token):
         _valid_opts = ['style', 'column_widths', 'caption']
-        check_valid_opts(self.run_tag, _valid_opts, token.format)
+        ensure_valid_opts(self.run_tag, _valid_opts, token.format)
 
         _style = token.format['style'] if 'style' in token.format else None
         _colwidths = None
@@ -454,7 +455,7 @@ class Renderer(BaseRenderer):
 
     def render_cell_tag(self, token):
         _valid_opts = ['color']
-        check_valid_opts(self.run_tag, _valid_opts, token.format)
+        ensure_valid_opts(self.run_tag, _valid_opts, token.format)
 
         if len(self.cells) < 1:
             return
@@ -467,7 +468,7 @@ class Renderer(BaseRenderer):
 
     def render_image_tag(self, token):
         _valid_opts = ['width', 'border_width', 'border_color']
-        check_valid_opts(self.run_tag, _valid_opts, token.format)
+        ensure_valid_opts(self.run_tag, _valid_opts, token.format)
 
         _width = parse_sizespec(token.format['width']) if 'width' in token.format else None
         _border_width = parse_sizespec(token.format['border_width']) if 'border_width' in token.format else None
@@ -476,7 +477,7 @@ class Renderer(BaseRenderer):
 
     def render_paragraph_block_tag(self, token):
         _valid_opts = ['spacing', 'before', 'after', 'style', 'align']
-        check_valid_opts(self.run_tag, _valid_opts, token.format)
+        ensure_valid_opts(self.run_tag, _valid_opts, token.format)
 
         _spacing = parse_sizespec(token.format['spacing']) if 'spacing' in token.format else None
         _before = parse_sizespec(token.format['before']) if 'before' in token.format else None

@@ -43,10 +43,12 @@ def file_generate(in_path, renderer, encoding='utf-8', **kwargs):
             return outfile
 
 def docx_generate(mdarg, encoding='utf-8', **kwargs):
+    outf = None
 
     if isinstance(mdarg, list) and len(mdarg) > 0:
         try:
-            main_doc = file_generate(mdarg[0], DocxRenderer, encoding, **kwargs)
+            md = mdarg[0]
+            main_doc = file_generate(md, DocxRenderer, encoding, **kwargs)
             main_comp = Composer(main_doc)
 
             for md in mdarg[1:]:
@@ -57,7 +59,7 @@ def docx_generate(mdarg, encoding='utf-8', **kwargs):
         except Exception as e:
             # if something messes up here, we must raise
             # this is a fatal error
-            raise e
+            utils.log.exception(f'error on input "{md}"')
 
     else:
         outf = file_generate(mdarg, DocxRenderer, encoding, **kwargs)

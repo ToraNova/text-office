@@ -18,6 +18,7 @@ Copyright (C) 2023 ToraNova
 import re
 import webcolors
 import lxml
+from .errx_helper import ensure_valid_value
 from docx import Document
 from docxcompose.composer import Composer
 from docx.oxml.shared import OxmlElement
@@ -99,10 +100,13 @@ def insert_hrule(para, linestyle='single'):
             'w:pPrChange'
             )
     bottom = OxmlElement('w:bottom')
-    if linestyle == 'dashsmall':
-        bottom.set(qn('w:val'), 'dashSmallGap')
-    else:
-        bottom.set(qn('w:val'), 'single')
+    vmap = {
+            'dashsmall': 'dashSmallGap',
+            'single': 'single',
+            None: 'single'
+            }
+    ensure_valid_value('hr', vmap, linestyle)
+    bottom.set(qn('w:val'), vmap[linestyle])
     bottom.set(qn('w:sz'), '6')
     bottom.set(qn('w:space'), '1')
     bottom.set(qn('w:color'), 'auto')
