@@ -31,6 +31,14 @@
 
 <section orientation=landscape>
 
+<header tabstops="right">
+<font size=8pt name=Calibri>Foobar<tab>V1</font>
+</header>
+
+<footer tabstops="right">
+<font size=8pt name=Calibri>2022 Internal Use Only.<tab><pgnum show_total=yes start=1></font>
+</footer>
+
 # This is in landscape!
 
 <table column_widths="3in, 3in, 3in" align=center style="Medium Grid 1">

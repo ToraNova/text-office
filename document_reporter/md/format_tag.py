@@ -45,6 +45,9 @@ class KeyValueMixin:
         if self.format_value_raw == '>':
             # edge case 1, KeyValueFormatTag without attributes
             pass
+        elif self.format_value_raw is None:
+            # edge case 2, ditto
+            pass
         else:
             self.format = parse_kv_pairs(self.format_value_raw, item_sep=' \n\t')
 
@@ -130,6 +133,9 @@ class LOFTag(NoBodyFormatTag):
 
 class SectionBreakTag(NoBodyFormatTag):
     pattern = re.compile(_build_regex_ftag_uni_pattern('secbr'))
+
+class InsertPageNumTag(KeyValueNoBodyFormatTag):
+    pattern = re.compile(_build_regex_ftag_uni_pattern('pgnum'))
 
 class SectionControlTag(KeyValueNoBodyFormatTag):
     pattern = re.compile(_build_regex_ftag_uni_pattern('section'))

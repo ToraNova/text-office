@@ -1,10 +1,12 @@
 import webcolors
 import re
+from shlex import shlex
 from docx.shared import Pt, Inches, Cm, Mm, RGBColor, Length
 from docx.enum.section import WD_SECTION, WD_ORIENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from .errx_helper import ensure_valid_value
+
 
 def parse_color(color):
     if color is None:
@@ -28,6 +30,7 @@ def parse_color(color):
 
     raise ValueError(f'unable to parse color: {color}')
 
+
 def parse_sizespec(sizespec):
     if sizespec is None:
         return None
@@ -50,6 +53,7 @@ def parse_sizespec(sizespec):
     except Exception as e:
         raise ValueError(f'unable to parse size spec: {sizespec}')
 
+
 def parse_sec_orientation(orientation):
     vmap = {
         'landscape': WD_ORIENT.LANDSCAPE,
@@ -58,6 +62,7 @@ def parse_sec_orientation(orientation):
     }
     ensure_valid_value('orientation', vmap, orientation)
     return vmap[orientation]
+
 
 def parse_para_align(align):
     vmap = {
@@ -70,6 +75,7 @@ def parse_para_align(align):
     ensure_valid_value('align', vmap, align)
     return vmap[align]
 
+
 def parse_table_align(align):
     vmap = {
             'center': WD_TABLE_ALIGNMENT.CENTER,
@@ -80,3 +86,32 @@ def parse_table_align(align):
     ensure_valid_value('align', vmap, align)
     return vmap[align]
 
+
+def parse_kv_pairs(text, item_sep=",", value_sep="="):
+    """Parse key-value pairs from a shell-like text"""
+    # initialize a lexer, in POSIX mode (to properly handle escaping)
+    lexer = shlex(text, posix=True)
+    # set ',' as whitespace for the lexer
+    # (the lexer will use this character to separate words)
+    lexer.whitespace = item_sep
+    # include '=' as a word character
+    # (this is done so that the lexer returns a list of key-value pairs)
+    # (if your option key or value contains any unquoted special character, you will need to add it here)
+    lexer.wordchars += value_sep
+    lexer.wordchars += '.' # allow dot
+    # then we separate option keys and values to build the resulting dictionary
+    # (maxsplit is required to make sure that '=' in value will not be a problem)
+
+    try:
+        od = dict(word.split(value_sep, maxsplit=1) for word in lexer)
+        return od
+    except Exception as e:
+        raise ValueError(f'attribute error: {text}')
+
+
+def parse_bool(val):
+    if isinstance(val, str):
+        val = val.casefold()
+    if val in [1, True, '1', 'yes', 'true']:
+        return True
+    return False

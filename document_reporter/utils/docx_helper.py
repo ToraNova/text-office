@@ -37,12 +37,13 @@ from docx.enum.dml import MSO_THEME_COLOR_INDEX
 from docx.shared import Pt, Inches, Cm, Mm, RGBColor, Length
 from docx.styles.styles import Styles
 from docx.oxml.xmlchemy import serialize_for_reading
-from .docx_parsers import (
+from .parsers import (
         parse_sizespec,
         parse_color,
         parse_sec_orientation,
         parse_table_align,
         parse_para_align,
+        parse_bool,
         )
 
 def insert_section(doc, stype):
@@ -55,7 +56,7 @@ def insert_section(doc, stype):
         None: WD_SECTION.NEW_PAGE,
     }
     ensure_valid_value('secbr', vmap, stype)
-    doc.add_section(vmap[stype])
+    return doc.add_section(vmap[stype])
 
 def format_section(section, **kwargs):
     _optmap = {
@@ -403,6 +404,54 @@ def _add_lox(run, ist, prompt_update):
     run._r.append(instrText)
     run._r.append(fldChar2)
     run._r.append(fldChar4)
+
+def insert_pagenum(section, run, **kwargs):
+    _optmap = ['show_total', 'start']
+    ensure_valid_attr(_optmap, kwargs.keys())
+
+    fldChar1 = OxmlElement('w:fldChar')
+    fldChar1.set(qn('w:fldCharType'), 'begin')
+
+    instrText = OxmlElement('w:instrText')
+    instrText.set(qn('xml:space'), 'preserve')
+    instrText.text = "PAGE"
+
+    fldChar2 = OxmlElement('w:fldChar')
+    fldChar2.set(qn('w:fldCharType'), 'end')
+
+    run._r.append(fldChar1)
+    run._r.append(instrText)
+    run._r.append(fldChar2)
+
+    if parse_bool(kwargs.get('show_total')):
+        # allow 'page x of n' displays
+        t2 = OxmlElement('w:t')
+        t2.set(qn('xml:space'), 'preserve')
+        t2.text = ' of '
+        run._r.append(t2)
+
+        fldChar1 = OxmlElement('w:fldChar')
+        fldChar1.set(qn('w:fldCharType'), 'begin')
+
+        instrText = OxmlElement('w:instrText')
+        instrText.set(qn('xml:space'), 'preserve')
+        instrText.text = "NUMPAGES"
+
+        fldChar2 = OxmlElement('w:fldChar')
+        fldChar2.set(qn('w:fldCharType'), 'end')
+
+        run._r.append(fldChar1)
+        run._r.append(instrText)
+        run._r.append(fldChar2)
+
+    pstart = kwargs.get('start')
+    if isinstance(pstart, str) and pstart.isnumeric():
+        pgNumType =  OxmlElement('w:pgNumType')
+        pgNumType.set(qn('w:start'), pstart)
+
+        section._sectPr.append(pgNumType)
+
+
 
 # NOT INCORPORATED YET-------------------------------------------------
 

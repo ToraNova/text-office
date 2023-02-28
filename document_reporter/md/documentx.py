@@ -31,7 +31,7 @@ from docx import Document
 from .. import utils
 from ..utils.docx_helper import (
         format_paragraph, format_run, format_table, format_tabstops,
-        format_figure, format_cell, format_section,
+        format_figure, format_cell, format_section, insert_pagenum,
         insert_hyperlink, assign_numbering, insert_section, insert_hrule,
         make_caption, delete_paragraph, insert_LOF, insert_LOT, insert_TOC,
         )
@@ -39,7 +39,7 @@ from ..utils.docx_helper import (
 from .format_tag import (
         HorizontalRuleTag, LineBreakTag, PageBreakTag, SectionBreakTag, SectionControlTag,
         BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag,
-        FontTag, ImageTag, CellTag, InsertTabTag,
+        FontTag, ImageTag, CellTag, InsertTabTag, InsertPageNumTag,
         TOCTag, LOTTag, LOFTag,
         )
 
@@ -59,7 +59,7 @@ class Renderer(BaseRenderer):
             HorizontalRuleTag, LineBreakTag, PageBreakTag,
             SectionBreakTag, InsertTabTag, SectionControlTag,
             BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag,
-            FontTag, ImageTag, CellTag,
+            FontTag, ImageTag, CellTag, InsertPageNumTag,
             CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag,
             FooterBlockTag, HeaderBlockTag,
             TOCTag, LOTTag, LOFTag,
@@ -196,6 +196,9 @@ class Renderer(BaseRenderer):
         self.runs = []
         self.paras = self.docx.paragraphs.copy()
         self.tables = self.docx.tables.copy()
+        self.sections = []
+        for s in self.docx.sections:
+            self.sections.append(s)
         self.hdg_count = {} # for heading number in caption use
         self.cells = []
         self.inline_shapes = []
@@ -275,10 +278,10 @@ class Renderer(BaseRenderer):
         render_ptr = self.docx
         if hasattr(token, 'render_to') and isinstance(token.render_to, str):
             if token.render_to == 'header':
-                render_ptr = self.docx.sections[-1].header
+                render_ptr = self.sections[-1].header
 
             elif token.render_to == 'footer':
-                render_ptr = self.docx.sections[-1].footer
+                render_ptr = self.sections[-1].footer
         else:
             token.render_to = 'body'
 
@@ -333,12 +336,19 @@ class Renderer(BaseRenderer):
             self.runs.append(self.paras[-1].add_run())
         self.runs[-1].add_tab()
 
+    def render_insert_page_num_tag(self, token):
+        self.runs.append(self.paras[-1].add_run())
+        insert_pagenum(self.sections[-1], self.runs[-1], **token.format)
+
     def render_section_break_tag(self, token):
-        insert_section(self.docx, token.format_value)
+        new_section = insert_section(self.docx, token.format_value)
+        new_section.header.is_linked_to_previous = False
+        new_section.footer.is_linked_to_previous = False
+        self.sections.append(new_section)
 
     def render_section_control_tag(self, token):
         # make adjustments to current section
-        format_section(self.docx.sections[-1], **token.format)
+        format_section(self.sections[-1], **token.format)
 
     def render_comment_block_tag(self, token):
         # do nothing
@@ -408,11 +418,13 @@ class Renderer(BaseRenderer):
         self.populate_and_format_paras(token, **token.format)
 
     def render_header_block_tag(self, token):
-        _tsalign = format_tabstops(token.format.get('tabstops'), self.docx.sections[-1])
+        _tsalign = format_tabstops(token.format.get('tabstops'), self.sections[-1])
+        self.sections[-1].header.is_linked_to_previous = utils.parse_bool(token.format.get('linked'))
         utils.set_attr_recursively(token, block_token.Paragraph, 'render_to', 'header')
         self.populate_and_format_paras(token, tabstops=_tsalign)
 
     def render_footer_block_tag(self, token):
-        _tsalign = format_tabstops(token.format.get('tabstops'), self.docx.sections[-1])
+        _tsalign = format_tabstops(token.format.get('tabstops'), self.sections[-1])
+        self.sections[-1].footer.is_linked_to_previous = utils.parse_bool(token.format.get('linked'))
         utils.set_attr_recursively(token, block_token.Paragraph, 'render_to', 'footer')
         self.populate_and_format_paras(token, tabstops=_tsalign)
