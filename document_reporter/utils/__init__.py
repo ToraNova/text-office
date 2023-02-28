@@ -17,34 +17,20 @@ Copyright (C) 2023 ToraNova
 
 import os
 import sys
-import logging
 import traceback
 from shlex import shlex
 from .errx_helper import (
         ensure_valid_opts,
         ensure_valid_value,
+        ensure_template_file,
         )
 
-_path_ = os.path.realpath(__file__)
-_base_, _file_ = os.path.split(_path_)
-_lib_ = _base_[:-_base_[::-1].find(os.path.sep)-1]
-prj_root_path = _lib_[:-_lib_[::-1].find(os.path.sep)]
-boiler_template_path = os.path.join(prj_root_path, 'boiler_templates')
+from .log_helper import log
 
-_mainmod_path_ = os.path.abspath(sys.modules['__main__'].__file__)
-_mainmod_base_, _mainmod_file_ = os.path.split(_mainmod_path_)
-_local_path_ = _mainmod_base_[:-_mainmod_base_[::-1].find(os.path.sep)-1]
-boiler_template_path_pip = os.path.join(_local_path_, 'boiler_templates')
-
-#log_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-log_formatter = logging.Formatter('%(message)s')
-log_handler = logging.StreamHandler(sys.stdout)
-log_handler.setLevel(logging.DEBUG)
-log_handler.setFormatter(log_formatter)
-
-log = logging.getLogger()
-log.setLevel(logging.DEBUG)
-log.addHandler(log_handler)
+from .path_helper import (
+        boiler_template_path_pip,
+        boiler_template_path,
+        )
 
 def parse_kv_pairs(text, item_sep=",", value_sep="="):
     """Parse key-value pairs from a shell-like text"""
@@ -74,12 +60,3 @@ def parse_bool(val):
     if val in [1, True, '1', 'yes', 'true']:
         return True
     return False
-
-    #if key not in map:
-    #    raise KeyError(f'invalid value on attr: {token.format["tabstop"]} {list(map.keys())}')
-    #        map = {
-    #            'center': WD_TAB_ALIGNMENT.CENTER,
-    #            'left': WD_TAB_ALIGNMENT.LEFT,
-    #            'right': WD_TAB_ALIGNMENT.RIGHT,
-    #        }
-    #        if kv['tabstop'] not in map:

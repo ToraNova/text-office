@@ -42,6 +42,7 @@ Here are some markdown samples.
 4. [lists](samples/lists.md)
 5. [table-of-contents](samples/toc.md)
 6. [headers/footers](samples/headfoot.md)
+7. [boiler generation](samples/kvboil.md)
 
 ## How is this different from pandoc?
 This tool supports use of formatting styles, image width adjustments, fonts etc.
