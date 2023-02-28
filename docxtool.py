@@ -30,6 +30,7 @@ from document_reporter import (
 
 JOIN_OP = ['join', 'concat']
 LIST_OP = ['listonly', 'nogen']
+LSTY_OP = ['show_default_styles']
 MKTP_OP = ['mktpl']
 
 parser = argparse.ArgumentParser()
@@ -38,7 +39,7 @@ parser.add_argument('inputs', help='input files', type=str, nargs='*')
 parser.add_argument('-f', '--manifest', help='processing manifest', type=str)
 parser.add_argument('--ascending', help='sort in ascending order (if sorting)', action='store_true')
 parser.add_argument('--nosort', help='do not sort input naturally', action='store_true')
-parser.add_argument('-op', '--operation', help=f'type of operation to do: ({md.OPNAME}), {JOIN_OP}, {LIST_OP}, {MKTP_OP}', type=str, default='mdgen')
+parser.add_argument('-op', '--operation', help=f'type of operation to do: ({md.OPNAME}), {JOIN_OP}, {LIST_OP}, {MKTP_OP}, {LSTY_OP}', type=str, default='mdgen')
 parser.add_argument('-o', '--output', help='output docx path', type=str, default='output.docx')
 parser.add_argument('-t', '--template', help='template docx path', type=str)
 parser.add_argument('-dxopt', '--docx_opts', help='key-value pair of docx options (e.g., caption_prefix_heading=1, prompt_updatefield=no)', type=str)
@@ -108,6 +109,13 @@ elif args.operation in JOIN_OP:
 elif args.operation in MKTP_OP:
     # create template docx
     docx = Document()
+
+elif args.operation in LSTY_OP:
+
+    _docx = Document()
+    for s in _docx.styles:
+        print(s)
+    docx = None
 
 else:
     if len(inlist) < 1:

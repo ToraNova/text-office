@@ -59,7 +59,8 @@ def docx_generate(mdarg, encoding='utf-8', **kwargs):
         except Exception as e:
             # if something messes up here, we must raise
             # this is a fatal error
-            utils.log.exception(f'error on input "{md}"')
+            #utils.log.error(f'error on input "{md}" - {e}')
+            utils.log.exception(f'error on input "{md}" - {e}')
 
     else:
         outf = file_generate(mdarg, DocxRenderer, encoding, **kwargs)

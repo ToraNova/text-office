@@ -16,9 +16,13 @@ Copyright (C) 2023 ToraNova
 '''
 
 import re
-import webcolors
 import lxml
-from .errx_helper import ensure_valid_value
+from .errx_helper import (
+        ensure_valid_attr,
+        ensure_valid_value,
+        ensure_and_set,
+        )
+
 from docx import Document
 from docxcompose.composer import Composer
 from docx.oxml.shared import OxmlElement
@@ -27,62 +31,143 @@ from docx.oxml import parse_xml, CT_P
 from docx.opc.constants import RELATIONSHIP_TYPE
 from docx.oxml.numbering import CT_Num, CT_Numbering, CT_NumPr
 from docx.enum.section import WD_SECTION, WD_ORIENT
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.base import XmlMappedEnumMember
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
+from docx.enum.base import XmlMappedEnumMember, EnumValue
 from docx.enum.dml import MSO_THEME_COLOR_INDEX
-from docx.shared import Pt, Inches, Cm, Mm, RGBColor
+from docx.shared import Pt, Inches, Cm, Mm, RGBColor, Length
 from docx.styles.styles import Styles
 from docx.oxml.xmlchemy import serialize_for_reading
+from .docx_parsers import (
+        parse_sizespec,
+        parse_color,
+        parse_sec_orientation,
+        parse_table_align,
+        parse_para_align,
+        )
 
+def insert_section(doc, stype):
+    vmap = {
+        'oddpage': WD_SECTION.ODD_PAGE,
+        'evenpage': WD_SECTION.EVEN_PAGE,
+        'newpage': WD_SECTION.NEW_PAGE,
+        'newcol': WD_SECTION.NEW_COLUMN,
+        'cont': WD_SECTION.CONTINUOUS,
+        None: WD_SECTION.NEW_PAGE,
+    }
+    ensure_valid_value('secbr', vmap, stype)
+    doc.add_section(vmap[stype])
 
-def format_run(run, bold=None, italic=None, underline=None, strike=None, color=None, size=None, name=None, style=None):
-    if bold is not None:
-        run.font.bold = bold
-    if italic is not None:
-        run.font.italic = italic
-    if underline is not None:
-        run.font.underline = underline
-    if strike is not None:
-        run.font.strike = strike
-    if color is not None:
-        run.font.color.rgb = color
-    if size is not None:
-        run.font.size = size
-    if name is not None:
-        run.font.name = name
-    if style is not None:
-        run.style = style
+def format_section(section, **kwargs):
+    _optmap = {
+            'left_margin':  ([Length, float], kwargs, section, None, parse_sizespec),
+            'right_margin':  ([Length, float], kwargs, section, None, parse_sizespec),
+            'top_margin':  ([Length, float], kwargs, section, None, parse_sizespec),
+            'bottom_margin':  ([Length, float], kwargs, section, None, parse_sizespec),
+            'page_width':  ([Length, float], kwargs, section, None, parse_sizespec),
+            'page_height':  ([Length, float], kwargs, section, None, parse_sizespec),
+            'orientation': (EnumValue, kwargs, section, None, parse_sec_orientation),
+            }
+    ensure_valid_attr(_optmap.keys(), kwargs.keys())
+
+    for k, v in _optmap.items():
+        if v is None:
+            # special cases
+            continue
+        ensure_and_set(k, *v)
+
+    # force orientation change by swapping page_width and page_height
+    page_orient = parse_sec_orientation(kwargs.get('orientation'))
+    if isinstance(page_orient, EnumValue):
+        # force orientation change
+        pw = section.page_width
+        section.page_width = section.page_height
+        section.page_height = pw
+
+    return section
+
+def format_run(run, **kwargs):
+    _optmap = {
+            'bold':         (bool, kwargs, run.font),
+            'italic':       (bool, kwargs, run.font),
+            'underline':    (bool, kwargs, run.font),
+            'strike':       (bool, kwargs, run.font),
+            'name':         (str, kwargs, run.font),
+            'style':        (str, kwargs, run),
+            'size':         ([Length, float], kwargs, run.font, None, parse_sizespec),
+            'color':        (RGBColor, kwargs, run.font.color, 'rgb', parse_color),
+            }
+    ensure_valid_attr(_optmap.keys(), kwargs.keys())
+
+    for k, v in _optmap.items():
+        if v is None:
+            # special cases
+            continue
+        ensure_and_set(k, *v)
     return run
 
-def format_paragraph(para, style=None, align=None, spacing=None, before=None, after=None, add_tabstops=None):
-    if style is not None:
-        para.style = style
-    if align is not None:
-        para.paragraph_format.alignment = align
-    if spacing is not None:
-        para.paragraph_format.line_spacing = spacing
-    if before is not None:
-        para.paragraph_format.space_before = before
-    if after is not None:
-        para.paragraph_format.space_after = after
-    if add_tabstops is not None:
-        for ats in add_tabstops:
+def format_paragraph(para, **kwargs):
+    _optmap = {
+            'style': (str, kwargs, para.style),
+            'align': (EnumValue, kwargs, para.paragraph_format, 'alignment', parse_para_align),
+            'spacing': ([Length, float], kwargs, para.paragraph_format, 'line_spacing', parse_sizespec),
+            'before': ([Length, float], kwargs, para.paragraph_format, 'space_before', parse_sizespec),
+            'after': ([Length, float], kwargs, para.paragraph_format, 'space_after', parse_sizespec),
+            'tabstops': None,
+            }
+    ensure_valid_attr(_optmap.keys(), kwargs.keys())
+
+    for k, v in _optmap.items():
+        if v is None:
+            # special cases
+            continue
+        ensure_and_set(k, *v)
+
+    tabstops = kwargs.get('tabstops')
+    if isinstance(tabstops, list):
+        for ats in tabstops:
             para.paragraph_format.tab_stops.add_tab_stop(*ats)
+
     return para
 
-def format_table(table, style=None, align=None, autofit=None, colwidths=None):
-    if style is not None:
-        table.style = style
-    if autofit is not None:
-        table.autofit = autofit
-    if align is not None:
-        table.alignment = align
-    if colwidths is not None:
+def format_figure(figobj, **kwargs):
+    _optmap = ['width', 'height', 'border_width', 'border_color']
+    ensure_valid_attr(_optmap, kwargs.keys())
+    set_figure_dims(figobj, kwargs.get('width'), kwargs.get('height'))
+
+    bw = kwargs.get('border_width')
+    bc = kwargs.get('border_color')
+    if bw is not None:
+        if bc is not None:
+            set_figure_border(figobj, bw, bc)
+        else:
+            set_figure_border(figobj, bw)
+
+def format_table(table, **kwargs):
+    _optmap = {
+            'style': (str, kwargs, table),
+            'align': (EnumValue, kwargs, table, 'alignment', parse_table_align),
+            'autofit': (bool, kwargs, table),
+            'column_widths': None,
+            }
+    ensure_valid_attr(_optmap.keys(), kwargs.keys())
+
+    for k, v in _optmap.items():
+        if v is None:
+            # special cases
+            continue
+        ensure_and_set(k, *v)
+
+    colwidths = kwargs.get('column_widths')
+    if isinstance(colwidths, str):
+        cwidths=[]
+        for cr in colwidths.split(','):
+            cwidths.append(parse_sizespec(cr.strip()))
+
         table.autofit = False
         for r in table.rows:
             for idx, cell in enumerate(r.cells):
-                if idx < len(colwidths):
-                    cell.width = colwidths[idx]
+                if idx < len(cwidths):
+                    cell.width = cwidths[idx]
 
     return table
 
@@ -113,43 +198,23 @@ def insert_hrule(para, linestyle='single'):
     pBdr.append(bottom)
     return pBdr
 
-def parse_color(color):
-    if color.startswith('#') and len(color) > 6:
-        try:
-            return RGBColor.from_string(color[1:])
-        except Exception as e:
-            pass
+def format_tabstops(tabstop, cs):
+    if tabstop is None:
+        return None
 
-    try:
-        return RGBColor.from_string(webcolors.name_to_hex(color)[1:])
-    except Exception as e:
-        pass
-
-    try:
-        return RGBColor.from_string(color)
-    except Exception as e:
-        pass
-
-    raise ValueError(f'unable to parse color: {color}')
-
-def parse_sizespec(sizespec):
-    try:
-        match = re.search('([0-9.]+)([a-z]*)', sizespec)
-        rsval = float(match.group(1))
-        rstyp = match.group(2)
-
-        if rstyp == 'mm':
-            return Mm(rsval)
-        elif rstyp == 'pt':
-            return Pt(rsval)
-        elif rstyp == 'in':
-            return Inches(rsval)
-        elif rstyp == 'cm':
-            return Cm(rsval)
-        else:
-            return rsval
-    except Exception as e:
-        raise ValueError(f'unable to parse size spec: {sizespec}')
+    lmar = Inches(cs.left_margin.inches)
+    cmar = Inches(cs.page_width.inches/2 - cs.left_margin.inches)
+    rmar = Inches(cs.page_width.inches - (cs.left_margin.inches + cs.right_margin.inches))
+    vmap = {
+        'left': (lmar, WD_TAB_ALIGNMENT.LEFT),
+        'center': (cmar, WD_TAB_ALIGNMENT.CENTER),
+        'right': (rmar, WD_TAB_ALIGNMENT.RIGHT),
+    }
+    out = []
+    for t in tabstop.split(','):
+        ensure_valid_value('tabstops', vmap, t)
+        out.append(vmap[t])
+    return out
 
 def insert_hyperlink(para, txt, url):
     # This gets access to the document.xml.rels file and gets a new relation id value
@@ -239,13 +304,31 @@ def delete_paragraph(para):
     p.getparent().remove(p)
     p._p = p._element = None
 
-def shade_cell(cell, color=RGBColor(11, 11, 11)):
-    sh_elem = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), color))
-    cell._tc.get_or_add_tcPr().append(sh_elem)
+def format_cell(cell, **kwargs):
+    _optmap = ['color']
+    ensure_valid_attr(_optmap, kwargs.keys())
 
-def set_figure_border(figobj, width=Pt(1.5), color=RGBColor(00, 00, 00)):
-    colw = str(color)
-    strw = str(width)
+    color = parse_color(kwargs.get('color'))
+    if isinstance(color, RGBColor):
+        sh_elem = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), color))
+        cell._tc.get_or_add_tcPr().append(sh_elem)
+
+def set_figure_dims(figobj, width, height):
+    width = parse_sizespec(width)
+    if height is None:
+        # maintain aspect ratio here
+        sf = float(width) / float(figobj.width)
+        figobj.height = round(figobj.height * sf)
+    else:
+        # set height
+        figobj.height = parse_sizespec(height)
+
+    figobj.width = width
+
+def set_figure_border(figobj, border_width='1.5pt', border_color='000000'):
+
+    strw = str(parse_sizespec(border_width))
+    colw = str(parse_color(border_color))
     aln = OxmlElement('a:ln')
     aln.set('w', strw)
     afl = OxmlElement('a:solidFill')

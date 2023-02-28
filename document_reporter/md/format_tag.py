@@ -75,6 +75,11 @@ class KeyValueFormatTag(KeyValueMixin, FormatTag):
         super().__init__(match)
         self.parse_format()
 
+class KeyValueNoBodyFormatTag(KeyValueMixin, NoBodyFormatTag):
+    def __init__(self, match):
+        super().__init__(match)
+        self.parse_format()
+
 class BoldTag(NoAttrFormatTag):
     pattern = re.compile(_build_regex_ftag_noattr_pattern('b'), re.DOTALL)
 
@@ -125,6 +130,9 @@ class LOFTag(NoBodyFormatTag):
 
 class SectionBreakTag(NoBodyFormatTag):
     pattern = re.compile(_build_regex_ftag_uni_pattern('secbr'))
+
+class SectionControlTag(KeyValueNoBodyFormatTag):
+    pattern = re.compile(_build_regex_ftag_uni_pattern('section'))
 
 class NoNewLineException(Exception):
 

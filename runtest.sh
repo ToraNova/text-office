@@ -2,7 +2,7 @@
 
 . bin/activate
 
-arr=(dual toc headfoot figures lists tables)
+arr=(dual toc headfoot figures lists tables sections)
 
 mkdir -p testout
 

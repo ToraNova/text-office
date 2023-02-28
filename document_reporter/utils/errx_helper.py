@@ -7,20 +7,51 @@ from .path_helper import (
 from .log_helper import log
 
 
-class InvalidOption(KeyError):
-    def __init__(self, tag, key, valids):
-        super().__init__(f'invalid opt on tag {tag}: {key} {valids}')
-
+class InvalidAttr(KeyError):
+    def __init__(self, attr, valids):
+        super().__init__(f'invalid attr: {attr} {valids}')
 
 class InvalidValue(ValueError):
     def __init__(self, attr, value, valids):
-        super().__init__(f'invalid value on attr {attr}: {value} {valids}')
+        super().__init__(f'invalid value on attr "{attr}": {value} {valids}')
+
+class InvalidType(TypeError):
+    def __init__(self, used, desired):
+        super().__init__(f'invalid type used "{used}", requires "{desired}"')
+
+def ensure_and_set(vkey, vtype, v, obj, objkey=None, parser=None):
+    if objkey is None:
+        objkey = vkey
+
+    if isinstance(v, dict):
+        v = v.get(vkey)
+
+    if callable(parser):
+        v = parser(v)
+
+    if isinstance(vtype, list):
+        # allow OR types
+        for vtype_or in vtype:
+            if isinstance(v, vtype_or):
+                # if any meets, sets and exit
+                setattr(obj, objkey, v)
+                return
+    else:
+        # singular type
+        if isinstance(v, vtype):
+            # meets, sets and exists
+            setattr(obj, objkey, v)
+            return
+
+    if v is not None:
+        # v is specified, but invalid type, dev error
+        raise InvalidType(type(v), vtype)
 
 
-def ensure_valid_opts(tag, valid_list, opt_dict):
+def ensure_valid_attr(valid_list, opt_dict):
     for k in opt_dict:
         if k not in valid_list:
-            raise InvalidOption(tag,k, valid_list)
+            raise InvalidAttr(k, valid_list)
 
 
 def ensure_valid_value(attr, vmap, v):

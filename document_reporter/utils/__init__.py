@@ -20,7 +20,6 @@ import sys
 import traceback
 from shlex import shlex
 from .errx_helper import (
-        ensure_valid_opts,
         ensure_valid_value,
         ensure_template_file,
         )
@@ -60,3 +59,13 @@ def parse_bool(val):
     if val in [1, True, '1', 'yes', 'true']:
         return True
     return False
+
+
+def set_attr_recursively(token, instance_type, attr, value):
+    if isinstance(token, instance_type):
+        setattr(token, attr, value)
+
+    if hasattr(token, 'children'):
+        if isinstance(token.children, list):
+            for c in token.children:
+                set_attr_recursively(c, instance_type, attr, value)
