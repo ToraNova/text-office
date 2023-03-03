@@ -67,6 +67,10 @@ def format_section(section, **kwargs):
             'page_width':  ([Length, float], kwargs, section, None, parse_sizespec),
             'page_height':  ([Length, float], kwargs, section, None, parse_sizespec),
             'orientation': (EnumValue, kwargs, section, None, parse_sec_orientation),
+            'header_distance': ([Length, float], kwargs, section, None, parse_sizespec),
+            'footer_distance': ([Length, float], kwargs, section, None, parse_sizespec),
+            'header_linked': (bool, kwargs, section.header, 'is_linked_to_previous', parse_bool),
+            'footer_linked': (bool, kwargs, section.footer, 'is_linked_to_previous', parse_bool)
             }
     ensure_valid_attr(_optmap.keys(), kwargs.keys())
 
@@ -131,7 +135,7 @@ def format_paragraph(para, **kwargs):
     return para
 
 def format_figure(figobj, **kwargs):
-    _optmap = ['width', 'height', 'border_width', 'border_color']
+    _optmap = ('width', 'height', 'border_width', 'border_color')
     ensure_valid_attr(_optmap, kwargs.keys())
     set_figure_dims(figobj, kwargs.get('width'), kwargs.get('height'))
 
@@ -189,7 +193,7 @@ def insert_hrule(para, linestyle='single'):
     vmap = {
             'dashsmall': 'dashSmallGap',
             'single': 'single',
-            None: 'single'
+            None: 'single',
             }
     ensure_valid_value('hr', vmap, linestyle)
     bottom.set(qn('w:val'), vmap[linestyle])
@@ -306,13 +310,25 @@ def delete_paragraph(para):
     p._p = p._element = None
 
 def format_cell(cell, **kwargs):
-    _optmap = ['color']
-    ensure_valid_attr(_optmap, kwargs.keys())
-
     color = parse_color(kwargs.get('color'))
     if isinstance(color, RGBColor):
         sh_elem = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), color))
         cell._tc.get_or_add_tcPr().append(sh_elem)
+
+    if kwargs.get('color') is not None:
+        kwargs.pop('color')
+
+    tc = cell._tc
+    tcPr = tc.get_or_add_tcPr()
+
+    # check for tag existnace, if none found, then create one
+    tcBorders = tcPr.first_child_found_in("w:tcBorders")
+    if tcBorders is None:
+        tcBorders = OxmlElement('w:tcBorders')
+        tcPr.append(tcBorders)
+
+    set_border(tcBorders, **kwargs)
+    return cell
 
 def set_figure_dims(figobj, width, height):
     width = parse_sizespec(width)
@@ -406,7 +422,7 @@ def _add_lox(run, ist, prompt_update):
     run._r.append(fldChar4)
 
 def insert_pagenum(section, run, **kwargs):
-    _optmap = ['show_total', 'start']
+    _optmap = ('show_total', 'start')
     ensure_valid_attr(_optmap, kwargs.keys())
 
     fldChar1 = OxmlElement('w:fldChar')
@@ -452,45 +468,80 @@ def insert_pagenum(section, run, **kwargs):
         section._sectPr.append(pgNumType)
 
 
+def format_table_border(table, **kwargs):
+    tblPr = table._tblPr
 
-# NOT INCORPORATED YET-------------------------------------------------
+    # check for tag existence, if none found, then create one
+    tblBorders = tblPr.first_child_found_in('w:tblBorders')
+    if tblBorders is None:
+        tblBorders = OxmlElement('w:tblBorders')
+        tblPr.append(tblBorders)
 
-#def set_border(cell, **kwargs):
-#    """
-#    Set cell`s border
-#    Usage:
-#
-#    set_cell_border(
-#        cell,
-#        top={"sz": 12, "val": "single", "color": "#FF0000", "space": "0"},
-#        bottom={"sz": 12, "color": "#00FF00", "val": "single"},
-#        left={"sz": 24, "val": "dashed", "shadow": "true"},
-#        right={"sz": 12, "val": "dashed"},
-#    )
-#    """
-#    tc = cell._tc
-#    tcPr = tc.get_or_add_tcPr()
-#
-#    # check for tag existnace, if none found, then create one
-#    tcBorders = tcPr.first_child_found_in("w:tblBorders")
-#    if tcBorders is None:
-#        tcBorders = OxmlElement('w:tblBorders')
-#        tcPr.append(tcBorders)
-#
-#    # list over all available tags
-#    for edge in ('top', 'bottom', 'left', 'right', 'insideH', 'insideV'):
-#        edge_data = kwargs.get(edge)
-#        if edge_data:
-#            tag = 'w:{}'.format(edge)
-#
-#            # check for tag existnace, if none found, then create one
-#            element = tcBorders.find(qn(tag))
-#            if element is None:
-#                element = OxmlElement(tag)
-#                tcBorders.append(element)
-#
-#            # looks like order of attributes is important
-#            for key in ["sz", "val", "color", "space", "shadow"]:
-#                if key in edge_data:
-#                    element.set(qn('w:{}'.format(key)), str(edge_data[key]))
+    set_border(tblBorders, **kwargs)
+    return table
 
+
+def set_border(tbem, **kwargs):
+    _edgemap = ('left', 'right', 'top', 'bottom', 'insideH', 'insideV')
+    _typemap = ('width', 'line', 'color', 'space', 'shadow')
+    _defaults = {
+            'width': '12',
+            'color': '000000',
+            'line': 'single',
+            'space': '0',
+            'shadow': 'false',
+            }
+
+    _optmap = []
+    for e in _edgemap:
+        for t in _typemap:
+            _optmap.append('%s_%s' % (e, t))
+
+    ensure_valid_attr(_optmap, kwargs.keys())
+    submap = {
+        'width': 'sz',
+        'line': 'val',
+    }
+
+    # search for edge options, if any edge options exists, all types should be configured
+    for e in _edgemap:
+        edge_undefined = True
+        for opt in kwargs.keys():
+            if opt.startswith(e):
+                # one of the types on this edge is defined
+                edge_undefined = False
+                break
+
+        if edge_undefined:
+            # skip the rest
+            continue
+
+        for t in _typemap:
+            edat = kwargs.get('%s_%s' % (e, t))
+            if edat is None:
+                edat = _defaults[t]
+
+            if t == 'width':
+                if edat.endswith('pt'):
+                    edat = edat[:-2]
+
+            if t == 'color' and edat != 'auto':
+                edat = str(parse_color(edat))
+                if not edat.startswith('#'):
+                    edat = '#%s' % edat
+
+            if t in submap:
+                t = submap[t]
+
+            # check tag existence, if does not exist, create one
+            tag = 'w:%s' % e
+            element = tbem.find(qn(tag))
+
+            if element is None:
+                # element does not exist, create one
+                element = OxmlElement(tag)
+                tbem.append(element)
+
+            element.set(qn('w:%s' % t), edat)
+
+    return tbem

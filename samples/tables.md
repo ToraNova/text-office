@@ -1,11 +1,15 @@
 # Table Tests
 
+## Normal Table
+
 | hdr 1 | hdr 2 |
 | --- | --- |
 | row 1 col 1 | row 1 col 2 |
 | row 2 col 1 | <cell color=ffc000> row 2 col 2</cell> |
 
-<hr>
+## Aligned Table with adjusted column widths
+
+Notice that the table itself does not align centrally, only the text does.
 
 <align center>
 <table style='Table Grid' column_widths='1.11in, 4in, 1.11in'>
@@ -17,7 +21,7 @@
 </table>
 </align>
 
-<hr>
+## Aligned Table with adjust column widths and captions
 
 <align right>
 <table style='Table Grid' column_widths='1.11in, 1.11in, 4in' caption='caption test'>
@@ -43,9 +47,11 @@ if two tables are together with the same style, word automatically joins them, u
 </para>
 </table>
 
-<hr dashsmall>
+## Center Aligned Table, with texts aligned to the right
 
-<table style='Table Grid' column_widths='5cm, 8cm, 1cm'>
+Notice the table is centrally aligned, but the text remains left aligned. There is a difference between aligning the text in the table and the table itself.
+
+<table style='Table Grid' column_widths='5cm, 8cm, 1cm' align=center>
 
 | Col1 | Col2 | Col3 |
 | ---- | ---- | --- |
@@ -55,3 +61,40 @@ if two tables are together with the same style, word automatically joins them, u
 | qwer | <font name=Arial><b>xxxxxxxxxxxxx</b></font> | |
 | img | <img width=5cm>![](samples/test_card.png)</img><br>test in newline | |
 </table>
+
+## Aligned Table with adjusted paragraphs
+
+Basic table
+
+| <cell color=a9a9a9>foo</cell> | <cell color=b9b9b9>bar</cell> |
+| --- | --- |
+| <cell color=c9c9c9>fu</cell>  | <cell color=d9d9d9>baz</cell> |
+
+Spacing adjusted
+
+<para before=0pt after=0pt spacing=1>
+
+| <cell color=a9a9a9>foo</cell> | <cell color=b9b9b9>bar</cell> |
+| --- | --- |
+| <cell color=c9c9c9>fu</cell>  | <cell color=d9d9d9>baz</cell> |
+</para>
+
+## Table with border shading
+
+<border top_width=3 bottom_width=1 bottom_color=00ff00 bottom_line=double left_space=5 left_line=dashed right_shadow=true>
+
+| <cell color=a9a9a9>foo</cell> | <cell color=b9b9b9>bar</cell> |
+| --- | --- |
+| <cell color=c9c9c9>fu</cell>  | <cell color=d9d9d9>baz</cell> |
+| <cell color=c7c7c7>f8</cell>  | <cell color=d7d7d7>b2z</cell> |
+</border>
+
+Specifying border attributes in cell tags overrides the table border settings
+
+<border top_width=3 bottom_width=1 bottom_color=00ff00 bottom_line=double left_space=5 left_line=dashed right_shadow=true>
+
+| <cell color=a9a9a9>foo</cell> | <cell color=b9b9b9>bar</cell> |
+| --- | --- |
+| <cell color=c9c9c9 left_space=0 left_line=wave left_color=ff0000>fu</cell>  | <cell color=d9d9d9>baz</cell> |
+| <cell color=c7c7c7>f8</cell>  | <cell color=d7d7d7>b2z</cell> |
+</border>

@@ -24,7 +24,7 @@ from ..utils import parse_kv_pairs
 from mistletoe.span_token import SpanToken, RawText
 from mistletoe.block_token import BlockToken, tokenize
 
-_attr_matcher = r'(\S[^\<\>]*?)'
+_attr_matcher = r'([^\<\>\n]+)'
 
 def _build_regex_ftag_uni_pattern(tag):
     return f'<{tag}\\s*{_attr_matcher}?>'
@@ -116,6 +116,9 @@ class HorizontalRuleTag(NoBodyFormatTag):
 class LineBreakTag(NoBodyFormatTag):
     pattern = re.compile(_build_regex_ftag_uni_pattern('br'))
 
+class SectionBreakTag(NoBodyFormatTag):
+    pattern = re.compile(_build_regex_ftag_uni_pattern('secbr'))
+
 class InsertTabTag(NoBodyFormatTag):
     pattern = re.compile(_build_regex_ftag_uni_pattern('tab'))
 
@@ -130,9 +133,6 @@ class LOTTag(NoBodyFormatTag):
 
 class LOFTag(NoBodyFormatTag):
     pattern = re.compile(_build_regex_ftag_uni_pattern('lof'))
-
-class SectionBreakTag(NoBodyFormatTag):
-    pattern = re.compile(_build_regex_ftag_uni_pattern('secbr'))
 
 class InsertPageNumTag(KeyValueNoBodyFormatTag):
     pattern = re.compile(_build_regex_ftag_uni_pattern('pgnum'))
@@ -203,6 +203,9 @@ class AlignBlockTag(FormatBlockTag):
 
 class TableBlockTag(FormatKeyValueBlockTag):
     tag = 'table'
+
+class BorderBlockTag(FormatKeyValueBlockTag):
+    tag = 'border'
 
 class ParagraphBlockTag(FormatKeyValueBlockTag):
     tag = 'para'

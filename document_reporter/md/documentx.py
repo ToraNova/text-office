@@ -31,7 +31,7 @@ from docx import Document
 from .. import utils
 from ..utils.docx_helper import (
         format_paragraph, format_run, format_table, format_tabstops,
-        format_figure, format_cell, format_section, insert_pagenum,
+        format_figure, format_cell, format_section, insert_pagenum, format_table_border,
         insert_hyperlink, assign_numbering, insert_section, insert_hrule,
         make_caption, delete_paragraph, insert_LOF, insert_LOT, insert_TOC,
         )
@@ -45,7 +45,7 @@ from .format_tag import (
 
 from .format_tag import (
         CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag,
-        FooterBlockTag, HeaderBlockTag,
+        FooterBlockTag, HeaderBlockTag, BorderBlockTag,
         )
 
 class Renderer(BaseRenderer):
@@ -61,7 +61,7 @@ class Renderer(BaseRenderer):
             BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag,
             FontTag, ImageTag, CellTag, InsertPageNumTag,
             CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag,
-            FooterBlockTag, HeaderBlockTag,
+            FooterBlockTag, HeaderBlockTag, BorderBlockTag,
             TOCTag, LOTTag, LOFTag,
         ]), extras))
         self.rel_root = os.getcwd() if rel_root is None else rel_root
@@ -341,6 +341,7 @@ class Renderer(BaseRenderer):
         insert_pagenum(self.sections[-1], self.runs[-1], **token.format)
 
     def render_section_break_tag(self, token):
+        # insert new section
         new_section = insert_section(self.docx, token.format_value)
         new_section.header.is_linked_to_previous = False
         new_section.footer.is_linked_to_previous = False
@@ -375,22 +376,8 @@ class Renderer(BaseRenderer):
             self.render(col)
 
     def render_table_cell(self, token):
-        self.paras.append(self.cells[-1].paragraphs[0])
+        self.paras.append(self.cells[-1].paragraphs[0])  # add default para on cell
         self.render_inner(token)
-
-    # >>--------------------------------------SEP LINE 1-------------------------------------->>
-
-    def render_align_block_tag(self, token):
-        self.populate_and_format_paras(token, align=token.format_value)
-
-    def populate_caption(self, caption_type, caption_string, align=None):
-        tcpar = self.docx.add_paragraph(style='Caption').clear()
-        self.paras.append(tcpar)
-        format_paragraph(tcpar, align=align)
-        _dxopt = int(self.docx_opts.get('caption_prefix_heading', 0))
-        make_caption(tcpar.add_run(f'{caption_type} '), _dxopt, caption_type)
-
-        tcrun = tcpar.add_run(f': {caption_string}')
 
     def render_table_block_tag(self, token):
         # additional valid opts
@@ -403,8 +390,28 @@ class Renderer(BaseRenderer):
         if len(self.cells) < 1:
             return
 
-        format_cell(self.cells[-1], **token.format)
         self.render_inner(token)
+        format_cell(self.cells[-1], **token.format)
+
+    def render_border_block_tag(self, token):
+        tos = len(self.tables)
+        self.render_inner(token)
+        added = len(self.tables) - tos
+        for i in range(added):
+            target = self.tables[-(i+1)]
+            format_table_border(target, **token.format)
+
+    def render_align_block_tag(self, token):
+        self.populate_and_format_paras(token, align=token.format_value)
+
+    def populate_caption(self, caption_type, caption_string, align=None):
+        tcpar = self.docx.add_paragraph(style='Caption').clear()
+        self.paras.append(tcpar)
+        format_paragraph(tcpar, align=align)
+        _dxopt = int(self.docx_opts.get('caption_prefix_heading', 0))
+        make_caption(tcpar.add_run(f'{caption_type} '), _dxopt, caption_type)
+
+        tcrun = tcpar.add_run(f': {caption_string}')
 
     def render_image_tag(self, token):
         tos = len(self.inline_shapes)
@@ -419,12 +426,10 @@ class Renderer(BaseRenderer):
 
     def render_header_block_tag(self, token):
         _tsalign = format_tabstops(token.format.get('tabstops'), self.sections[-1])
-        self.sections[-1].header.is_linked_to_previous = utils.parse_bool(token.format.get('linked'))
         utils.set_attr_recursively(token, block_token.Paragraph, 'render_to', 'header')
         self.populate_and_format_paras(token, tabstops=_tsalign)
 
     def render_footer_block_tag(self, token):
         _tsalign = format_tabstops(token.format.get('tabstops'), self.sections[-1])
-        self.sections[-1].footer.is_linked_to_previous = utils.parse_bool(token.format.get('linked'))
         utils.set_attr_recursively(token, block_token.Paragraph, 'render_to', 'footer')
         self.populate_and_format_paras(token, tabstops=_tsalign)

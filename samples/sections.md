@@ -50,7 +50,14 @@
 
 <secbr newpage>
 
-<section left_margin=1in right_margin=1in top_margin=1in bottom_margin=1in orientation=portrait>
+<section left_margin=1in right_margin=1in top_margin=1in bottom_margin=1in orientation=portrait header_distance=0.3in header_linked=yes footer_distance=0.4in>
+The header in this section linked to the one in the previous section. You won't see the 'V1' because it follows the tabstops computed based on previous page's size, which is of landscape proportions. The header distance is set to 0.3"
+
+The footer is redefined by this page's proportion, which will appear normal. However, the footer distance has been set to 0.4".
+
+<footer tabstops="right">
+<font size=8pt name=Calibri>2022 Internal Use Only.<tab><pgnum show_total=yes start=1></font>
+</footer>
 
 # Back to Portrait
 
