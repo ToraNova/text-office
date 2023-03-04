@@ -24,7 +24,6 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from .errx_helper import ensure_valid_value
 
-
 def parse_color(color):
     if color is None:
         return None

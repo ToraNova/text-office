@@ -32,14 +32,14 @@ from .. import utils
 from ..utils.docx_helper import (
         format_paragraph, format_run, format_table, format_tabstops,
         format_figure, format_cell, format_section, insert_pagenum, format_table_border,
-        insert_hyperlink, assign_numbering, insert_section, insert_hrule,
+        insert_hyperlink, assign_numbering, insert_section, insert_hrule, merge_table_cells,
         make_caption, delete_paragraph, insert_LOF, insert_LOT, insert_TOC,
         )
 
 from .format_tag import (
         HorizontalRuleTag, LineBreakTag, PageBreakTag, SectionBreakTag, SectionControlTag,
         BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag,
-        FontTag, ImageTag, CellTag, InsertTabTag, InsertPageNumTag,
+        FontTag, ImageTag, CellTag, InsertTabTag, InsertPageNumTag, MergeTag,
         TOCTag, LOTTag, LOFTag,
         )
 
@@ -59,7 +59,7 @@ class Renderer(BaseRenderer):
             HorizontalRuleTag, LineBreakTag, PageBreakTag,
             SectionBreakTag, InsertTabTag, SectionControlTag,
             BoldTag, ItalicTag, UnderlineTag, StrongTag, EmphasisTag, StrikethroughTag,
-            FontTag, ImageTag, CellTag, InsertPageNumTag,
+            FontTag, ImageTag, CellTag, InsertPageNumTag, MergeTag,
             CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag,
             FooterBlockTag, HeaderBlockTag, BorderBlockTag,
             TOCTag, LOTTag, LOFTag,
@@ -390,6 +390,12 @@ class Renderer(BaseRenderer):
 
         self.render_inner(token)
         format_cell(self.cells[-1], **token.format)
+
+    def render_merge_tag(self, token):
+        if len(self.tables) < 1:
+            return
+
+        merge_table_cells(self.tables[-1], **token.format)
 
     def render_border_block_tag(self, token):
         tos = len(self.tables)

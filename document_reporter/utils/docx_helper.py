@@ -21,6 +21,7 @@ from .errx_helper import (
         ensure_valid_attr,
         ensure_valid_value,
         ensure_and_set,
+        ensure_all_attr,
         )
 
 from docx import Document
@@ -57,6 +58,29 @@ def insert_section(doc, stype):
     }
     ensure_valid_value('secbr', vmap, stype)
     return doc.add_section(vmap[stype])
+
+def merge_table_cells(table, **kwargs):
+    _optmap = {
+            'from_row': (int, 'digits'),
+            'from_col': (int, 'digits'),
+            'to_row': (int, 'digits'),
+            'to_col': (int, 'digits'),
+            }
+    ensure_all_attr(_optmap, kwargs)
+    fr = kwargs.get('from_row')
+    fc = kwargs.get('from_col')
+    tr = kwargs.get('to_row')
+    tc = kwargs.get('to_col')
+
+    if tr < fr:
+        fr, tr = tr, fr
+
+    if tc < fc:
+        fc, tc = tc, fc
+
+    merge_tar = table.cell(fr, fc)
+    merge_tar.merge(table.cell(tr, tc))
+    return table
 
 def format_section(section, **kwargs):
     _optmap = {
@@ -310,13 +334,16 @@ def delete_paragraph(para):
     p._p = p._element = None
 
 def format_cell(cell, **kwargs):
-    color = parse_color(kwargs.get('color'))
-    if isinstance(color, RGBColor):
+    if 'color' in kwargs:
+        color = parse_color(kwargs.pop('color'))
         sh_elem = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), color))
         cell._tc.get_or_add_tcPr().append(sh_elem)
 
-    if kwargs.get('color') is not None:
-        kwargs.pop('color')
+    if 'align' in kwargs:
+        align = kwargs.pop('align')
+        for para in cell.paragraphs:
+            ikwargs = {'align': align}
+            format_paragraph(para, **ikwargs)
 
     tc = cell._tc
     tcPr = tc.get_or_add_tcPr()
@@ -328,6 +355,7 @@ def format_cell(cell, **kwargs):
         tcPr.append(tcBorders)
 
     set_border(tcBorders, **kwargs)
+
     return cell
 
 def set_figure_dims(figobj, width, height):
@@ -517,8 +545,11 @@ def set_border(tbem, **kwargs):
             continue
 
         for t in _typemap:
-            edat = kwargs.get('%s_%s' % (e, t))
-            if edat is None:
+            _key = '%s_%s' % (e, t)
+
+            if _key in kwargs:
+                edat = kwargs.pop(_key)
+            else:
                 edat = _defaults[t]
 
             if t == 'width':

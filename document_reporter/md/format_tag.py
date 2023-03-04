@@ -134,6 +134,9 @@ class LOTTag(NoBodyFormatTag):
 class LOFTag(NoBodyFormatTag):
     pattern = re.compile(_build_regex_ftag_uni_pattern('lof'))
 
+class MergeTag(KeyValueNoBodyFormatTag):
+    pattern = re.compile(_build_regex_ftag_uni_pattern('merge'))
+
 class InsertPageNumTag(KeyValueNoBodyFormatTag):
     pattern = re.compile(_build_regex_ftag_uni_pattern('pgnum'))
 

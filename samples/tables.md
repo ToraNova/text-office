@@ -98,3 +98,65 @@ Specifying border attributes in cell tags overrides the table border settings
 | <cell color=c9c9c9 left_space=0 left_line=wave left_color=ff0000>fu</cell>  | <cell color=d9d9d9>baz</cell> |
 | <cell color=c7c7c7>f8</cell>  | <cell color=d7d7d7>b2z</cell> |
 </border>
+
+# Table with merged cells
+
+<table style='Table Grid'>
+
+| <cell align=center>1</cell> | 2 | 3  |
+| --- | --- | --- |
+| a | b | c |
+| d | e | f |
+</table>
+<merge from_row=0 from_col=0 to_row=0 to_col=2><br>
+
+<table style='Table Grid'>
+
+| <cell align=center>1</cell> | 2 | 3  |
+| --- | --- | --- |
+| a | b | c |
+| d | e | f |
+</table>
+<merge from_row=0 from_col=1 to_row=0 to_col=2><br>
+
+<table style='Table Grid'>
+
+| <cell align=center>1</cell> | 2 | 3  |
+| --- | --- | --- |
+| a | b | c |
+| d | e | f |
+</table>
+<merge from_row=0 from_col=0 to_row=2 to_col=0><br>
+
+<table style='Table Grid'>
+
+| <cell align=center>1</cell> | 2 | 3  |
+| --- | --- | --- |
+| a | b | c |
+| d | e | f |
+</table>
+<merge from_row=1 from_col=0 to_row=2 to_col=0><br>
+
+<table style='Table Grid'>
+
+| 1 | 2 | 3 | 4 | 5 |
+| --- | --- | --- | --- | --- |
+| a | b | c | d | e |
+| f | g | h | i | j |
+| a | b | c | d | e |
+| f | g | h | i | j |
+</table>
+<merge from_row=2 from_col=0 to_row=3 to_col=0>
+<merge from_row=0 from_col=0 to_row=0 to_col=4><br>
+
+<table style='Table Grid'>
+
+| 1 | 2 | 3 | 4 | 5 |
+| --- | --- | --- | --- | --- |
+| a | b | c | d | e |
+| f | g | h | i | j |
+| a | b | c | d | e |
+| f | g | h | i | j |
+</table>
+<merge from_row=0 from_col=0 to_row=1 to_col=1>
+<merge from_row=0 from_col=3 to_row=0 to_col=4>

@@ -28,6 +28,10 @@ class InvalidAttr(KeyError):
     def __init__(self, attr, valids):
         super().__init__(f'invalid attr: {attr} {valids}')
 
+class MissingAttr(KeyError):
+    def __init__(self, attr, required):
+        super().__init__(f'missing attr: {attr} {required}')
+
 class InvalidValue(ValueError):
     def __init__(self, attr, value, valids):
         super().__init__(f'invalid value on attr "{attr}": {value} {valids}')
@@ -64,6 +68,16 @@ def ensure_and_set(vkey, vtype, v, obj, objkey=None, parser=None):
         # v is specified, but invalid type, dev error
         raise InvalidType(type(v), vtype)
 
+def ensure_all_attr(required, opt_dict):
+    for k in required.keys():
+        if k not in opt_dict:
+            raise MissingAttr(k, required)
+        parser, valids = required[k]
+        v = opt_dict.get(k)
+        try:
+            opt_dict[k] = parser(v)
+        except Exception as e:
+            raise InvalidValue(k, v, valids)
 
 def ensure_valid_attr(valid_list, opt_dict):
     for k in opt_dict:
