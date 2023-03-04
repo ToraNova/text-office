@@ -141,6 +141,9 @@ def format_paragraph(para, **kwargs):
             'spacing': ([Length, float], kwargs, para.paragraph_format, 'line_spacing', parse_sizespec),
             'before': ([Length, float], kwargs, para.paragraph_format, 'space_before', parse_sizespec),
             'after': ([Length, float], kwargs, para.paragraph_format, 'space_after', parse_sizespec),
+            'left_indent': ([Length, float], kwargs, para.paragraph_format, None, parse_sizespec),
+            'right_indent': ([Length, float], kwargs, para.paragraph_format, None, parse_sizespec),
+            'first_line_indent': ([Length, float], kwargs, para.paragraph_format, None, parse_sizespec),
             'tabstops': None,
             }
     ensure_valid_attr(_optmap.keys(), kwargs.keys())
