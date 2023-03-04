@@ -116,10 +116,10 @@ def format_section(section, **kwargs):
 
 def format_run(run, **kwargs):
     _optmap = {
-            'bold':         (bool, kwargs, run.font),
-            'italic':       (bool, kwargs, run.font),
-            'underline':    (bool, kwargs, run.font),
-            'strike':       (bool, kwargs, run.font),
+            'bold':         (bool, kwargs, run.font, None, parse_bool),
+            'italic':       (bool, kwargs, run.font, None, parse_bool),
+            'underline':    (bool, kwargs, run.font, None, parse_bool),
+            'strike':       (bool, kwargs, run.font, None, parse_bool),
             'name':         (str, kwargs, run.font),
             'style':        (str, kwargs, run),
             'size':         ([Length, float], kwargs, run.font, None, parse_sizespec),
@@ -178,7 +178,7 @@ def format_table(table, **kwargs):
     _optmap = {
             'style': (str, kwargs, table),
             'align': (EnumValue, kwargs, table, 'alignment', parse_table_align),
-            'autofit': (bool, kwargs, table),
+            'autofit': (bool, kwargs, table, None, parse_bool),
             'column_widths': None,
             }
     ensure_valid_attr(_optmap.keys(), kwargs.keys())
