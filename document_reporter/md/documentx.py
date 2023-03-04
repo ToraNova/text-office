@@ -321,13 +321,11 @@ class Renderer(BaseRenderer):
         self.runs[-1].add_text(token.content)
 
     def render_line_break(self, token):
-        if len(self.runs) > 0:
-            self.runs[-1].add_break()
+        self.runs.append(self.paras[-1].add_run())
+        self.runs[-1].add_break()
 
     def render_line_break_tag(self, token):
-        #self.runs[-1].text += '\n'
-        if len(self.runs) < 1:
-            self.runs.append(self.paras[-1].add_run())
+        self.runs.append(self.paras[-1].add_run())
         self.runs[-1].add_break()
 
     def render_insert_tab_tag(self, token):

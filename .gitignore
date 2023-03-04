@@ -27,3 +27,5 @@ boiler_templates/*
 !boiler_templates/dtpt-1.md
 
 testout/*
+
+!testrefs/*.docx
