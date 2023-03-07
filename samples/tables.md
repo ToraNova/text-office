@@ -37,7 +37,7 @@ Notice that the table itself does not align centrally, only the text does.
 if two tables are together with the same style, word automatically joins them, unless a break in introduced in between</comment>
 <br>
 
-<table style='Table Grid' column_widths='1.11in, 1.11in, 4in'>
+<table style='Table Grid' column_widths='1.11in, 1.11in, 4in' caption='center caption' caption_align=center>
 <para before=6pt spacing=1.15 after=6pt>
 
 | | | |

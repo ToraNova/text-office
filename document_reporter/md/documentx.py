@@ -380,8 +380,11 @@ class Renderer(BaseRenderer):
     def render_table_block_tag(self, token):
         # additional valid opts
         if isinstance(token.format.get('caption'), str):
-            self.populate_caption('Table', token.format.get('caption'))
-            del token.format['caption']
+            kwargs = {
+                'align': token.format.pop('caption_align', None)
+            }
+            self.populate_caption('Table', token.format.get('caption'), **kwargs)
+            token.format.pop('caption')
         self.populate_and_format_tables(token, **token.format)
 
     def render_cell_tag(self, token):
@@ -408,10 +411,10 @@ class Renderer(BaseRenderer):
     def render_align_block_tag(self, token):
         self.populate_and_format_paras(token, align=token.format_value)
 
-    def populate_caption(self, caption_type, caption_string, align=None):
+    def populate_caption(self, caption_type, caption_string, **kwargs):
         tcpar = self.docx.add_paragraph(style='Caption').clear()
         self.paras.append(tcpar)
-        format_paragraph(tcpar, align=align)
+        format_paragraph(tcpar, **kwargs)
         _dxopt = int(self.docx_opts.get('caption_prefix_heading', 0))
         make_caption(tcpar.add_run(f'{caption_type} '), _dxopt, caption_type)
 
