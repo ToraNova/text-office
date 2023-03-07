@@ -21,7 +21,6 @@ Copyright (C) 2023 ToraNova
 import os
 import re
 import webcolors
-from urllib.parse import urlparse
 
 from itertools import chain
 from mistletoe import block_token, span_token
@@ -33,7 +32,7 @@ from ..utils.docx_helper import (
         format_paragraph, format_run, format_table, format_tabstops,
         format_figure, format_cell, format_section, insert_pagenum, format_table_border,
         insert_hyperlink, assign_numbering, insert_section, insert_hrule, merge_table_cells,
-        make_caption, delete_paragraph, insert_LOF, insert_LOT, insert_TOC,
+        make_caption, delete_paragraph, insert_LOF, insert_LOT, insert_TOC, left_indent_from_level,
         )
 
 from .format_tag import (
@@ -172,9 +171,6 @@ class Renderer(BaseRenderer):
 
         self.populate_caption('Figure', token.title)
 
-    def render_image_tag(self, token):
-        up = urlparse(token.format_value_raw)
-
     def render_block_code(self, token):
         _dxopt = utils.parse_bool(self.docx_opts.get('error_on_blockcode', False))
         if _dxopt:
@@ -193,13 +189,13 @@ class Renderer(BaseRenderer):
 
         # paragraph and run stack
         self.list_level = 0 # default root level
+        self.heading_level = None # no heading level
         self.runs = []
         self.paras = self.docx.paragraphs.copy()
         self.tables = self.docx.tables.copy()
         self.sections = []
         for s in self.docx.sections:
             self.sections.append(s)
-        self.hdg_count = {} # for heading number in caption use
         self.cells = []
         self.inline_shapes = []
         self.render_inner(token)
@@ -223,7 +219,8 @@ class Renderer(BaseRenderer):
         added = len(self.paras) - tos
         # apply format to all added elements during inner render
         for i in range(added):
-            format_paragraph(self.paras[-(i+1)], **kwargs)
+            tar = self.paras[-(i+1)]
+            format_paragraph(tar, **kwargs)
 
     def populate_and_format_tables(self, token, **kwargs):
         tos = len(self.tables) # top of stack
@@ -265,12 +262,11 @@ class Renderer(BaseRenderer):
 
     def render_heading(self, token):
         # assume that heading has no additional child
-        if token.level not in self.hdg_count:
-            self.hdg_count[token.level] = 1
-        else:
-            self.hdg_count[token.level] += 1
-        self.paras.append(self.docx.add_heading(level=token.level).clear())
+        self.heading_level = token.level
+        tar = self.docx.add_heading(level=token.level).clear()
+        self.paras.append(tar)
         self.render_inner(token)
+        self.auto_left_indent(tar, token.level-1)
 
     def render_paragraph(self, token):
         # for all span tokens
@@ -286,10 +282,26 @@ class Renderer(BaseRenderer):
             token.render_to = 'body'
 
         if hasattr(token, 'docx_style') and isinstance(token.docx_style, str):
-            self.paras.append(render_ptr.add_paragraph(style=token.docx_style).clear())
+            par = render_ptr.add_paragraph(style=token.docx_style)
         else:
-            self.paras.append(render_ptr.add_paragraph().clear())
+            par = render_ptr.add_paragraph()
+        par.clear()
+
+        self.paras.append(par)
         self.render_inner(token)
+        self.auto_left_indent(par)
+
+    def auto_left_indent(self, obj, lvl = None):
+        _dxopt = utils.parse_docx_sizespec(self.docx_opts.get('auto_left_indent', None))
+        if not _dxopt:
+            return
+        if not isinstance(self.heading_level, int):
+            # no headings yet, left most
+            lvl = 0
+        elif not isinstance(lvl, int):
+            # there are headings, but lvl is not an int (default)
+            lvl = self.heading_level
+        left_indent_from_level(obj, lvl, _dxopt)
 
     def render_horizontal_rule_tag(self, token):
         insert_hrule(self.paras[-1], token.format_value)
@@ -357,7 +369,8 @@ class Renderer(BaseRenderer):
         if len(token.children) < 1:
             return
         ncol = len(token.children[0].children)
-        self.tables.append(self.docx.add_table(0, ncol))
+        tbltar = self.docx.add_table(0, ncol)
+        self.tables.append(tbltar)
 
         if hasattr(token, 'header') and token.header is not None:
             token.header.is_header = True
@@ -366,6 +379,9 @@ class Renderer(BaseRenderer):
         for row in token.children:
             row.is_header = False
             self.render(row)
+
+        self.auto_left_indent(tbltar)
+
 
     def render_table_row(self, token):
         row = self.tables[-1].add_row()
@@ -414,6 +430,7 @@ class Renderer(BaseRenderer):
     def populate_caption(self, caption_type, caption_string, **kwargs):
         tcpar = self.docx.add_paragraph(style='Caption').clear()
         self.paras.append(tcpar)
+        # self.auto_left_indent(tcpar)  # uncomment this to auto-indent captions
         format_paragraph(tcpar, **kwargs)
         _dxopt = int(self.docx_opts.get('caption_prefix_heading', 0))
         make_caption(tcpar.add_run(f'{caption_type} '), _dxopt, caption_type)

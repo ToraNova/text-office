@@ -11,4 +11,6 @@ then
     for s in ${arr[@]}; do
         python ./docxtool.py samples/$s.md -o testrefs/$s.docx
     done;
+
+    python ./docxtool.py samples/auto_indent.md -o testrefs/auto_indent.docx -dxopt auto_left_indent=0.4in
 fi

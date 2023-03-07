@@ -25,6 +25,8 @@ from .errx_helper import (
         )
 
 from docx import Document
+from docx.table import Table
+from docx.text.paragraph import Paragraph
 from docxcompose.composer import Composer
 from docx.oxml.shared import OxmlElement
 from docx.oxml.ns import qn, nsdecls
@@ -35,7 +37,10 @@ from docx.enum.section import WD_SECTION, WD_ORIENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.enum.base import XmlMappedEnumMember, EnumValue
 from docx.enum.dml import MSO_THEME_COLOR_INDEX
-from docx.shared import Pt, Inches, Cm, Mm, RGBColor, Length
+from docx.shared import (
+        Length, Pt, Inches, Cm, Mm, Twips,
+        RGBColor,
+        )
 from docx.styles.styles import Styles
 from docx.oxml.xmlchemy import serialize_for_reading
 from .parsers import (
@@ -180,6 +185,7 @@ def format_table(table, **kwargs):
             'align': (EnumValue, kwargs, table, 'alignment', parse_table_align),
             'autofit': (bool, kwargs, table, None, parse_bool),
             'column_widths': None,
+            'left_indent': None,
             }
     ensure_valid_attr(_optmap.keys(), kwargs.keys())
 
@@ -200,6 +206,10 @@ def format_table(table, **kwargs):
             for idx, cell in enumerate(r.cells):
                 if idx < len(cwidths):
                     cell.width = cwidths[idx]
+
+    left_indent = parse_sizespec(kwargs.get('left_indent'))
+    if left_indent is not None:
+        indent_table(table, left_indent)
 
     return table
 
@@ -362,7 +372,11 @@ def format_cell(cell, **kwargs):
     return cell
 
 def set_figure_dims(figobj, width, height):
-    width = parse_sizespec(width)
+    if width is None:
+        width = figobj.width
+    else:
+        width = parse_sizespec(width)
+
     if height is None:
         # maintain aspect ratio here
         sf = float(width) / float(figobj.width)
@@ -512,6 +526,16 @@ def format_table_border(table, **kwargs):
     return table
 
 
+def indent_table(table, indent):
+    # noinspection PyProtectedMember
+    tbl_pr = table._element.xpath('w:tblPr')
+    if tbl_pr:
+        e = OxmlElement('w:tblInd')
+        e.set(qn('w:w'), str(indent.twips))
+        e.set(qn('w:type'), 'dxa')
+        tbl_pr[0].append(e)
+
+
 def set_border(tbem, **kwargs):
     _edgemap = ('left', 'right', 'top', 'bottom', 'insideH', 'insideV')
     _typemap = ('width', 'line', 'color', 'space', 'shadow')
@@ -579,3 +603,9 @@ def set_border(tbem, **kwargs):
             element.set(qn('w:%s' % t), edat)
 
     return tbem
+
+def left_indent_from_level(obj, lvl, indent_p_lvl=Inches(0.4)):
+    if isinstance(obj, Paragraph):
+        obj.paragraph_format.left_indent = indent_p_lvl * lvl
+    elif isinstance(obj, Table):
+        indent_table(obj, Twips(indent_p_lvl.twips * lvl))
