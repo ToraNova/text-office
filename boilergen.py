@@ -30,7 +30,7 @@ parser.add_argument('module', help='boilerplate generator module to use (e.g., v
 args = parser.parse_args(sys.argv[1:2])
 
 try:
-    importstr = f'document_reporter.boilers.{args.module}'
+    importstr = f'text_office.boilers.{args.module}'
     boiler = importlib.import_module(importstr)
     boiler.generate(sys.argv[2:])
 except ImportError:

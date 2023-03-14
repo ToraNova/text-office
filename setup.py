@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-from office_text import version
+from text_office import version
 _packages = find_packages()
 
 setup(

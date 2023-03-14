@@ -19,6 +19,7 @@ dev.db
 uploads/*
 tmp/*
 
+output.md
 output.md5
 
 # template stuff
