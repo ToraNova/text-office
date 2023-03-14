@@ -4,7 +4,7 @@ Some text below heading. block types (e.g., headings, paragraphs) ought to be se
 
 ## Text Formatting 1 - Fonts
 
-<font color=red>You should see this text in red in microsoft docx, but they will appear normally in a markdown display. This is because markdown renderers typically ignore xml tags, which is what the document-reporter's extended syntax uses for formatting.</font> This text will be in normal. <b>This is a special case, it will appear bold in both docx and markdown renders</b>. This is because markdown recognizes `<b></b>` tags.
+<font color=red>You should see this text in red in microsoft docx, but they will appear normally in a markdown display. This is because markdown renderers typically ignore xml tags, which is what the text-office's extended syntax uses for formatting.</font> This text will be in normal. <b>This is a special case, it will appear bold in both docx and markdown renders</b>. This is because markdown recognizes `<b></b>` tags.
 
 <i>Same goes for italics, </i><u>underlines</u> and <strike>strikethrough</strike>. You can nest them together <b><i>like this</i></b>.
 

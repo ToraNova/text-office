@@ -1,4 +1,4 @@
-# Python Document Reporter 'document-reporter'
+# Python Text Office 'text-office'
 A python tool to convert text-based formats (i.e., md) to documents (e.g., docx, pdf). It is built to be simple to use and integrate with your other workflows. This tool is written using [python-docx](https://python-docx.readthedocs.io/en/latest/) and [mistletoe](https://github.com/miyuchina/mistletoe).
 
 ## Why did I made this?
@@ -9,7 +9,7 @@ Another benefit of this is that because I mainly work on a Linux distro, so it m
 This is NOT a replacement for Microsoft Word. You will still need that. It is just a tool to help you create report more easily if you have a similar workflow like mine.
 
 ## Installation
-Installation is very easy with pip. Just do `pip install document-reporter`
+Installation is very easy with pip. Just do `pip install text-office`
 
 ### Pitfalls
 If `/home/<your-username>/.local/bin` is not on your PATH, which is the default installation directory for python scripts, you will need to add it to your PATH first.
@@ -26,7 +26,7 @@ Zsh
 echo 'export PATH="$PATH:$HOME/.local/bin"' >> $HOME/.zshrc
 ```
 
-Alternatively, you can install the tool globally to /usr/ with `sudo pip install document-reporter`. This is not recommended!
+Alternatively, you can install the tool globally to /usr/ with `sudo pip install text-office`. This is not recommended!
 
 ## Getting Started
 Checkout the walkthrough for a use-case creating a penetration testing report using .md files.

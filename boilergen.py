@@ -23,7 +23,7 @@ from cvss import CVSS2, CVSS3
 import sys
 import importlib
 
-from document_reporter.utils import log
+from text_office.utils import log
 
 parser = argparse.ArgumentParser()
 parser.add_argument('module', help='boilerplate generator module to use (e.g., vapt)', type=str)

@@ -23,7 +23,8 @@ from natsort import natsorted
 from os.path import isfile, isdir, join
 from docx import Document
 from docx.document import Document as _DOCX
-from document_reporter import (
+from text_office import (
+        version,
         md,
         utils,
         )
@@ -44,7 +45,13 @@ parser.add_argument('-o', '--output', help='output docx path', type=str, default
 parser.add_argument('-t', '--template', help='template docx path', type=str)
 parser.add_argument('-dxopt', '--docx_opts', help='key-value pair of docx options (e.g., caption_prefix_heading=1, prompt_updatefield=no)', type=str)
 parser.add_argument('--rel_root', help='relative root (for images, attachments)', type=str)
+parser.add_argument('--version', help='show version number', action='store_true')
 args = parser.parse_args()
+
+if args.version:
+    # show version then exit
+    print('text-office', version)
+    exit(0)
 
 docx = None
 
