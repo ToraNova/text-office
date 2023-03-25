@@ -42,21 +42,10 @@ def render_file(infile, **kwargs):
         outfile = rdr.render(block_token.Document(infile))
         return outfile
 
-def docx_generate(mdarg, encoding='utf-8', pre_merge=True, **kwargs):
+def docx_generate(mdarg, encoding=utils.default_encoding, **kwargs):
     outf = None
 
-    if pre_merge and isinstance(mdarg, list) and len(mdarg) > 0:
-        try:
-            mdbuf = io.StringIO()
-            for md in mdarg:
-                with open(md, 'r', encoding=encoding) as infile:
-                    mdbuf.write(infile.read())
-            mdbuf.seek(0)
-            outf = render_file(mdbuf, **kwargs)
-        except Exception as e:
-            utils.log.exception(f'error on input "{md}" - {e}')
-
-    elif isinstance(mdarg, list) and len(mdarg) > 0:
+    if isinstance(mdarg, list) and len(mdarg) > 0:
         try:
             md = mdarg[0]
             with open(md, 'r', encoding=encoding) as infile:

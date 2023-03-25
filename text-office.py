@@ -16,6 +16,7 @@ Copyright (C) 2023 ToraNova
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
+import io
 import argparse
 import datetime
 from os import listdir
@@ -29,10 +30,11 @@ from text_office import (
         utils,
         )
 
-JOIN_OP = ['join', 'concat']
+JOIN_OP = ['djoin', 'dconcat']
 LIST_OP = ['listonly', 'nogen']
 LSTY_OP = ['show_default_styles']
 MKTP_OP = ['mktpl']
+MERG_OP = ['tmerge']
 
 parser = argparse.ArgumentParser()
 # single
@@ -40,13 +42,12 @@ parser.add_argument('inputs', help='input files', type=str, nargs='*')
 parser.add_argument('-f', '--manifest', help='processing manifest', type=str)
 parser.add_argument('--ascending', help='sort in ascending order (if sorting)', action='store_true')
 parser.add_argument('--nosort', help='do not sort input naturally', action='store_true')
-parser.add_argument('-op', '--operation', help=f'type of operation to do: ({md.OPNAME}), {JOIN_OP}, {LIST_OP}, {MKTP_OP}, {LSTY_OP}', type=str, default='mdgen')
+parser.add_argument('-op', '--operation', help=f'type of operation to do: ({md.OPNAME}), {JOIN_OP}, {LIST_OP}, {MKTP_OP}, {LSTY_OP}, {MERG_OP}', type=str, default='generate')
 parser.add_argument('-o', '--output', help='output docx path', type=str, default='output.docx')
 parser.add_argument('-t', '--template', help='template docx path', type=str)
 parser.add_argument('-dxopt', '--docx_opts', help='key-value pair of docx options (e.g., caption_prefix_heading=1, prompt_updatefield=no)', type=str)
 parser.add_argument('--rel_root', help='relative root (for images, attachments)', type=str)
 parser.add_argument('--version', help='show version number', action='store_true')
-parser.add_argument('--premerge', help='pre-merge .md files before generation', action='store_true')
 args = parser.parse_args()
 
 if args.version:
@@ -83,7 +84,8 @@ if args.manifest is not None:
                 utils.log.error(f'cannot open specified file in manifest "{args.manifest}" for processing: {line}')
                 continue
 
-            inlist.append(line)
+            if _module.can_process(line):
+                inlist.append(line)
 else:
     # specifying directly from args
     for inp in args.inputs:
@@ -96,7 +98,7 @@ else:
                 if isfile(_filepath) and _module.can_process(_filepath):
                     inlist.append(_filepath)
 
-if args.nosort:
+if args.nosort or args.operation in MERG_OP:
     # don't sort
     pass
 else:
@@ -125,6 +127,15 @@ elif args.operation in LSTY_OP:
         print(s)
     docx = None
 
+elif args.operation in MERG_OP:
+    if args.output.endswith('.docx'):
+        args.output = args.output[:-5] + '.md'
+
+    with open(args.output, 'w', encoding=utils.default_encoding) as outfile:
+        for md in inlist:
+            with open(md, 'r', encoding=utils.default_encoding) as infile:
+                outfile.write(infile.read())
+
 else:
     if len(inlist) < 1:
         utils.log.critical('no inputs')
@@ -137,7 +148,6 @@ else:
     # generate
     docx = _module.docx_generate(
             inlist,
-            pre_merge=args.premerge,
             docx_template=args.template,
             rel_root=args.rel_root,
             docx_opts=docx_opts,

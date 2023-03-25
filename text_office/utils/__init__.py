@@ -44,3 +44,5 @@ def set_attr_recursively(token, instance_type, attr, value):
         if isinstance(token.children, list):
             for c in token.children:
                 set_attr_recursively(c, instance_type, attr, value)
+
+default_encoding = 'utf-8'
