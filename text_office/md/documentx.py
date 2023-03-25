@@ -48,7 +48,7 @@ from .format_tag import (
         )
 
 class Renderer(BaseRenderer):
-    def __init__(self, tag='notag', docx_template=None, rel_root=None, docx_opts=None, *extras):
+    def __init__(self, docx_template=None, rel_root=None, docx_opts=None, *extras):
         '''
         renders a .docx using docx_template as the template file
         rel_root determine the path to include relative path resources (e.g., images)
@@ -66,7 +66,6 @@ class Renderer(BaseRenderer):
         self.rel_root = os.getcwd() if rel_root is None else rel_root
         self.docx_template = docx_template
         self.docx_opts = {}
-        self.run_tag = tag
         if isinstance(docx_opts, dict):
             self.docx_opts = docx_opts
 

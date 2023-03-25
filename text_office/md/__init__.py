@@ -16,6 +16,7 @@ Copyright (C) 2023 ToraNova
 '''
 
 import traceback
+import io
 from mistletoe import block_token
 
 from .. import utils
@@ -30,30 +31,42 @@ OPNAME = [
 def can_process(fn):
     return fn.endswith('.md')
 
-def file_generate(in_path, renderer, encoding='utf-8', **kwargs):
+def render_file(infile, **kwargs):
     """
     Converts markdown input to the output supported by the given renderer.
     If no renderer is supplied, ``HTMLRenderer`` is used.
     Note that extra token types supported by the given renderer
     are automatically (and temporarily) added to the parsing process.
     """
-    with open(in_path, 'r', encoding=encoding) as infile:
-        with renderer(tag=in_path, **kwargs) as rdr:
-            outfile = rdr.render(block_token.Document(infile))
-            return outfile
+    with DocxRenderer(**kwargs) as rdr:
+        outfile = rdr.render(block_token.Document(infile))
+        return outfile
 
-def docx_generate(mdarg, encoding='utf-8', **kwargs):
+def docx_generate(mdarg, encoding='utf-8', pre_merge=True, **kwargs):
     outf = None
 
-    if isinstance(mdarg, list) and len(mdarg) > 0:
+    if pre_merge and isinstance(mdarg, list) and len(mdarg) > 0:
+        try:
+            mdbuf = io.StringIO()
+            for md in mdarg:
+                with open(md, 'r', encoding=encoding) as infile:
+                    mdbuf.write(infile.read())
+            mdbuf.seek(0)
+            outf = render_file(mdbuf, **kwargs)
+        except Exception as e:
+            utils.log.exception(f'error on input "{md}" - {e}')
+
+    elif isinstance(mdarg, list) and len(mdarg) > 0:
         try:
             md = mdarg[0]
-            main_doc = file_generate(md, DocxRenderer, encoding, **kwargs)
-            main_comp = Composer(main_doc)
+            with open(md, 'r', encoding=encoding) as infile:
+                main_doc = render_file(infile, **kwargs)
+                main_comp = Composer(main_doc)
 
             for md in mdarg[1:]:
-                app_doc = file_generate(md, DocxRenderer, encoding, **kwargs)
-                main_comp.append(app_doc)
+                with open(md, 'r', encoding=encoding) as infile:
+                    app_doc = render_file(infile, **kwargs)
+                    main_comp.append(app_doc)
 
             outf = main_comp.doc
         except Exception as e:
@@ -63,7 +76,8 @@ def docx_generate(mdarg, encoding='utf-8', **kwargs):
             utils.log.exception(f'error on input "{md}" - {e}')
 
     else:
-        outf = file_generate(mdarg, DocxRenderer, encoding, **kwargs)
+        with open(mdarg, 'r', encoding=encoding) as infile:
+            outf = render_file(infile, **kwargs)
 
     #utils.docx_helper.set_updatefields(outf, 'true')
     return outf

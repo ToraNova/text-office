@@ -46,6 +46,7 @@ parser.add_argument('-t', '--template', help='template docx path', type=str)
 parser.add_argument('-dxopt', '--docx_opts', help='key-value pair of docx options (e.g., caption_prefix_heading=1, prompt_updatefield=no)', type=str)
 parser.add_argument('--rel_root', help='relative root (for images, attachments)', type=str)
 parser.add_argument('--version', help='show version number', action='store_true')
+parser.add_argument('--premerge', help='pre-merge .md files before generation', action='store_true')
 args = parser.parse_args()
 
 if args.version:
@@ -136,6 +137,7 @@ else:
     # generate
     docx = _module.docx_generate(
             inlist,
+            pre_merge=args.premerge,
             docx_template=args.template,
             rel_root=args.rel_root,
             docx_opts=docx_opts,
