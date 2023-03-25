@@ -27,6 +27,7 @@ def generate(inargs):
     parser.add_argument('-d', '--data', help='key-value pair of substitutions options (e.g., foo=bar, count=3)', type=str)
     parser.add_argument('-o', '--output', help='output md filename', type=str, default='output.md')
     parser.add_argument('-stdout', '--stdout', help='output to stdout', action="store_true")
+    parser.add_argument('--overwrite', help='overwrite output instead of append', action='store_true')
     args = parser.parse_args(inargs)
 
     kvd = {}
@@ -46,5 +47,6 @@ def generate(inargs):
         sys.stdout.write(buf)
     else:
         utils.log.info(f'creating boilerplate markdown from "{tplfn}" with values: {kvd}')
-        with open(args.output, 'a+') as out:
+        mode = 'w' if args.overwrite else 'a+'
+        with open(args.output, mode) as out:
             out.write(buf)
