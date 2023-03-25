@@ -19,13 +19,13 @@ dev.db
 uploads/*
 tmp/*
 
-output.md
-output.md5
-
 # template stuff
 boiler_templates/*
 !boiler_templates/.gitkeep
 !boiler_templates/dtpt-1.md
+
+/*.md
+!README.md
 
 testout/*
 

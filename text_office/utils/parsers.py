@@ -103,7 +103,7 @@ def parse_table_align(align):
     return vmap[align]
 
 
-def parse_kv_pairs(text, item_sep=",", value_sep="="):
+def parse_kv_pairs(text, item_sep=", ", value_sep="="):
     """Parse key-value pairs from a shell-like text"""
     # initialize a lexer, in POSIX mode (to properly handle escaping)
     lexer = shlex(text, posix=True)
@@ -114,7 +114,7 @@ def parse_kv_pairs(text, item_sep=",", value_sep="="):
     # (this is done so that the lexer returns a list of key-value pairs)
     # (if your option key or value contains any unquoted special character, you will need to add it here)
     lexer.wordchars += value_sep
-    lexer.wordchars += '.' # allow dot
+    lexer.wordchars += '!@#$%^&*()[];:.<>?/+-' # allow dot, slahes, round and square brackets
     # then we separate option keys and values to build the resulting dictionary
     # (maxsplit is required to make sure that '=' in value will not be a problem)
 
@@ -122,7 +122,7 @@ def parse_kv_pairs(text, item_sep=",", value_sep="="):
         od = dict(word.split(value_sep, maxsplit=1) for word in lexer)
         return od
     except Exception as e:
-        raise ValueError(f'attribute error: {text}')
+        raise ValueError(f'attribute error: {text}: {e}')
 
 
 def parse_bool(val):
