@@ -30,3 +30,4 @@ boiler_templates/*
 testout/*
 
 !testrefs/*.docx
+!docx_templates/*.docx
