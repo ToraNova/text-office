@@ -22,6 +22,7 @@ import os
 import re
 import webcolors
 
+from io import StringIO
 from itertools import chain
 from mistletoe import block_token, span_token
 from mistletoe.base_renderer import BaseRenderer
@@ -44,7 +45,7 @@ from .format_tag import (
 
 from .format_tag import (
         CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag,
-        FooterBlockTag, HeaderBlockTag, BorderBlockTag,
+        FooterBlockTag, HeaderBlockTag, BorderBlockTag, CodeFontBlockTag,
         )
 
 class Renderer(BaseRenderer):
@@ -61,7 +62,7 @@ class Renderer(BaseRenderer):
             FontTag, ImageTag, CellTag, InsertPageNumTag, MergeTag,
             CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag,
             FooterBlockTag, HeaderBlockTag, BorderBlockTag,
-            TOCTag, LOTTag, LOFTag,
+            TOCTag, LOTTag, LOFTag, CodeFontBlockTag,
         ]), extras))
         self.rel_root = os.getcwd() if rel_root is None else rel_root
         self.docx_template = docx_template
@@ -175,8 +176,14 @@ class Renderer(BaseRenderer):
         if _dxopt:
             raise NotImplementedError('block_codes not supported, use <font name="Lucida Sans Typewriter"></font> instead')
         else:
-            # just render as-is on ms-docx
-            self.render_paragraph(token)
+            par = self.make_paragraph(token)
+
+            rtobj = token.children[0]
+            sio = StringIO(rtobj.content)
+            for lines in sio:
+                self.runs.append(self.paras[-1].add_run())
+                self.runs[-1].add_text(lines)
+                self.runs[-1].add_break()
 
     def render_document(self, token):
         # create document from template
@@ -267,9 +274,7 @@ class Renderer(BaseRenderer):
         self.render_inner(token)
         self.auto_left_indent(tar, token.level-1)
 
-    def render_paragraph(self, token):
-        # for all span tokens
-
+    def make_paragraph(self, token):
         render_ptr = self.docx
         if hasattr(token, 'render_to') and isinstance(token.render_to, str):
             if token.render_to == 'header':
@@ -287,6 +292,11 @@ class Renderer(BaseRenderer):
         par.clear()
 
         self.paras.append(par)
+        return par
+
+    def render_paragraph(self, token):
+        # for all span tokens
+        par = self.make_paragraph(token)
         self.render_inner(token)
         self.auto_left_indent(par)
 
@@ -456,3 +466,6 @@ class Renderer(BaseRenderer):
         _tsalign = format_tabstops(token.format.get('tabstops'), self.sections[-1])
         utils.set_attr_recursively(token, block_token.Paragraph, 'render_to', 'footer')
         self.populate_and_format_paras(token, tabstops=_tsalign)
+
+    def render_code_font_block_tag(self, token):
+        self.populate_and_format_runs(token, **token.format)

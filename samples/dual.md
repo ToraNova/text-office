@@ -148,7 +148,19 @@ Block quotes may be shown in monospace fonts on markdowns, but the tool will dis
 
 ```
 monospace font in markdown renders, normal styling in microsoft docx.
+supports multiline as well
 ```
+
+```
+another block code is a new paragraph
+```
+
+<code_font color=green>
+
+```
+font styling in block codes
+```
+</code_font>
 
 ### Paragraph Spacing (DOCX only)
 

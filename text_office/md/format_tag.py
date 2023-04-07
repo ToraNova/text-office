@@ -148,21 +148,28 @@ class NoNewLineException(Exception):
     def __init__(self, tagname):
         super().__init__(f'invalid block tag "{tagname}": can\'t find end tag, did you include a newline after the start tag/before the end tag (at least 2 lines required)?')
 
+class ParseException(Exception):
+    def __init__(self, tagname, start, lines):
+        super().__init__(f'failed to parse {tagname} tag: "{start}" with lines {lines}')
+
 class FormatBlockTag(BlockToken):
 
     _end_cond = None
 
     def __init__(self, lines):
-        start_token = re.search(_build_regex_ftag_start_pattern(self.tag), lines[0], re.DOTALL)
-        self.format_value_raw = start_token.group(1)
-        if self.format_value_raw is not None:
-            self.format_value = self.format_value_raw.casefold()
-        lines[0] = lines[0][start_token.span()[1]:]
-        if len(lines[-1].strip()) < 1:
-            raise NoNewLineException(self.tag)
-        end_token =re.search(f'</{self.tag}>', lines[-1])
-        lines[-1] = lines[-1][:end_token.span()[0]]
-        super().__init__(lines, tokenize)
+        try:
+            start_token = re.search(_build_regex_ftag_start_pattern(self.tag), lines[0], re.DOTALL)
+            self.format_value_raw = start_token.group(1)
+            if self.format_value_raw is not None:
+                self.format_value = self.format_value_raw.casefold()
+            lines[0] = lines[0][start_token.span()[1]:]
+            if len(lines[-1].strip()) < 1:
+                raise NoNewLineException(self.tag)
+            end_token =re.search(f'</{self.tag}>', lines[-1])
+            lines[-1] = lines[-1][:end_token.span()[0]]
+            super().__init__(lines, tokenize)
+        except Exception as e:
+            raise ParseException(self.tag, start_token.group(0), ''.join(lines))
 
     @classmethod
     def start(cls, line):
@@ -212,6 +219,9 @@ class BorderBlockTag(FormatKeyValueBlockTag):
 
 class ParagraphBlockTag(FormatKeyValueBlockTag):
     tag = 'para'
+
+class CodeFontBlockTag(FormatKeyValueBlockTag):
+    tag = 'code_font'
 
 class HeaderBlockTag(FormatKeyValueBlockTag):
     tag = 'header'
