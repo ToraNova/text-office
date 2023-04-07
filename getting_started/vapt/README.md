@@ -44,7 +44,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 </align>
 ```
 
-Save the Markdown (I'll use 'a.md') and use the tool with `docxtool.py a.md` to generate it. Note that you will need the image '[pic-1.png](pic-1.png)' in the same directory as you run the tool.
+Save the Markdown (I'll use 'a.md') and use the tool with `text-office.py a.md` to generate it. Note that you will need the image '[pic-1.png](pic-1.png)' in the same directory as you run the tool.
 
 The tool supports formatting features such as table widths, font sizes, types and modifiers such as bold, italic etc. In addition, it can also support figures with captions, figure width and borders. Like markdown, the tool also support generation of bullet and numerical lists in the resulting .docx.
 
@@ -82,7 +82,7 @@ To modify the caption default style, select on the (inserted) caption and change
 
 ![](howto-caption-3.png)
 
-Delete the figure and the caption from your template (the template should always be empty!) and save it. Then to use it, do `docxtool.py -t <path-to-template.docx> <your-writeup.md>`. The caption should be centered now.
+Delete the figure and the caption from your template (the template should always be empty!) and save it. Then to use it, do `text-office.py -t <path-to-template.docx> <your-writeup.md>`. The caption should be centered now.
 
 ### Other Styling
 The section 'Aligning the Caption' not only applies to caption, but to all default styling that you would like to enforce in your generated .docx. For example, if you want your default font to be 'Verdana' pt 9 with justified aligment, simply just edit the 'Normal' style and save the template.
@@ -124,7 +124,7 @@ I typically create a directory for each project I am working on, with the follow
 
 Then to create the entire findings report, I would just run the following command under 'project'.
 
-`docxtool.py -t <my-engagement-template.docx> -o <output_file.docx> findings/`
+`text-office.py -t <my-engagement-template.docx> -o <output_file.docx> findings/`
 
 which will create a .docx filled with the findings. Next is just to copy all of the generated content in the .docx and use it wherever I need to. You can even streamline your entire reporting process to have the tool create the full report, but I find that this is the most adaptable method if the report layout needs to be changed frequently depending on projects.
 

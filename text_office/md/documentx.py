@@ -45,7 +45,7 @@ from .format_tag import (
 
 from .format_tag import (
         CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag,
-        FooterBlockTag, HeaderBlockTag, BorderBlockTag, CodeFontBlockTag,
+        FooterBlockTag, HeaderBlockTag, BorderBlockTag, FontBlockTag,
         )
 
 class Renderer(BaseRenderer):
@@ -62,7 +62,7 @@ class Renderer(BaseRenderer):
             FontTag, ImageTag, CellTag, InsertPageNumTag, MergeTag,
             CommentBlockTag, AlignBlockTag, TableBlockTag, ParagraphBlockTag,
             FooterBlockTag, HeaderBlockTag, BorderBlockTag,
-            TOCTag, LOTTag, LOFTag, CodeFontBlockTag,
+            TOCTag, LOTTag, LOFTag, FontBlockTag,
         ]), extras))
         self.rel_root = os.getcwd() if rel_root is None else rel_root
         self.docx_template = docx_template
@@ -467,5 +467,5 @@ class Renderer(BaseRenderer):
         utils.set_attr_recursively(token, block_token.Paragraph, 'render_to', 'footer')
         self.populate_and_format_paras(token, tabstops=_tsalign)
 
-    def render_code_font_block_tag(self, token):
+    def render_font_block_tag(self, token):
         self.populate_and_format_runs(token, **token.format)

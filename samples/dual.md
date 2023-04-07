@@ -155,12 +155,12 @@ supports multiline as well
 another block code is a new paragraph
 ```
 
-<code_font color=green>
+<param color=green>
 
 ```
-font styling in block codes
+font styling in block codes, 'param' is used for font styling, while 'para' is used for paragraph styling.
 ```
-</code_font>
+</param>
 
 ### Paragraph Spacing (DOCX only)
 

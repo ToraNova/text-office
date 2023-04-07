@@ -220,11 +220,11 @@ class BorderBlockTag(FormatKeyValueBlockTag):
 class ParagraphBlockTag(FormatKeyValueBlockTag):
     tag = 'para'
 
-class CodeFontBlockTag(FormatKeyValueBlockTag):
-    tag = 'code_font'
-
 class HeaderBlockTag(FormatKeyValueBlockTag):
     tag = 'header'
 
 class FooterBlockTag(FormatKeyValueBlockTag):
     tag = 'footer'
+
+class FontBlockTag(FormatKeyValueBlockTag):
+    tag = 'param'
