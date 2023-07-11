@@ -131,3 +131,32 @@ def parse_bool(val):
     if val in [1, True, '1', 'yes', 'true']:
         return True
     return False
+
+def parse_int(val):
+    if isinstance(val, int):
+        return val
+    elif isinstance(val, str):
+        try:
+            return int(val)
+        except Exception as e:
+            raise ValueError(f'cannot parse int %s' % val)
+    elif val is None:
+        return None
+    else:
+        raise Exception(f'unexpected int parse candidate: %s' % val)
+
+def parse_default_args(argk, argd, prefix=None):
+    a = {}
+    for k in argk:
+        if isinstance(prefix, str):
+            _prefix = prefix
+        else:
+            _prefix = ''
+        cand = _prefix + k
+        v = argd.get(cand, None)
+        if isinstance(v, str):
+            if isinstance(prefix, str):
+                cand = cand[cand.find(prefix) + len(prefix):]
+            a[cand] = v
+
+    return a

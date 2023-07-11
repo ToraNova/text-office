@@ -17,12 +17,12 @@ If `/home/<your-username>/.local/bin` is not on your PATH, which is the default 
 Temporarily add it to your PATH by `export PATH="$PATH:$HOME/.local/bin"`. For a more persistent solution, do:
 
 Bash
-```
+```bash
 echo 'export PATH="$PATH:$HOME/.local/bin"' >> $HOME/.profile
 ```
 
 Zsh
-```
+```zsh
 echo 'export PATH="$PATH:$HOME/.local/bin"' >> $HOME/.zshrc
 ```
 
@@ -47,6 +47,16 @@ Here are some markdown samples.
 
 ## How is this different from pandoc?
 This tool supports use of formatting styles, image width adjustments, fonts etc.
+
+## Changelogs
+
+### Version 0.2.9
+
+Now supports default figure/table formatting via docx_opts
+
+```bash
+text-office.py in.md -o out.docx -dxopt default_figure_width=3in,default_figure_border_width=1pt,default_table_style=TableGrid
+```
 
 ## License
 ```

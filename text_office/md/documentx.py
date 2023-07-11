@@ -165,6 +165,13 @@ class Renderer(BaseRenderer):
         self.runs.append(self.paras[-1].add_run())
         self.inline_shapes.append(self.runs[-1].add_picture(img_path))
 
+        # default fig configuration via dxopt
+        _dxopt = utils.parse_default_args(['width', 'border_width', 'border_color'], self.docx_opts, 'default_figure_')
+
+        if _dxopt:
+            # default format
+            format_figure(self.inline_shapes[-1], **_dxopt)
+
         # skip caption if no caption string
         if len(token.title.strip()) < 1:
             return
@@ -388,6 +395,13 @@ class Renderer(BaseRenderer):
         for row in token.children:
             row.is_header = False
             self.render(row)
+
+        # default table configuration via dxopt
+        _dxopt = utils.parse_default_args(['style', 'align', 'autofit', 'column_widths'], self.docx_opts, 'default_table_')
+
+        if _dxopt:
+            # default format
+            format_table(self.tables[-1], **_dxopt)
 
         self.auto_left_indent(tbltar)
 

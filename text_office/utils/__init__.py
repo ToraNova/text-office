@@ -34,6 +34,7 @@ from .parsers import (
         parse_bool,
         parse_kv_pairs,
         parse_sizespec as parse_docx_sizespec,
+        parse_default_args,
         )
 
 def set_attr_recursively(token, instance_type, attr, value):
