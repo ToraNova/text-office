@@ -395,6 +395,9 @@ class Renderer(BaseRenderer):
     def render_table_row(self, token):
         row = self.tables[-1].add_row()
         for cidx, col in enumerate(token.children):
+            if cidx >= len(row.cells):
+                utils.log.warn('table has %d columns but a row has %d columns: %s' % (len(row.cells), cidx+1, str([c.content for c in col.children])))
+                continue
             self.cells.append(row.cells[cidx])
             self.render(col)
 

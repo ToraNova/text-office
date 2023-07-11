@@ -20,8 +20,8 @@ setup(
     install_requires=[
         'cvss==2.5',
         'docxcompose==1.3.4',
-        'lxml==4.8.0',
-        'mistletoe==0.8.2',
+        'lxml==4.9.3',
+        'mistletoe==1.1.0',
         'natsort==8.1.0',
         'python-docx==0.8.11',
         'six==1.16.0',
