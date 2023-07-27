@@ -16,7 +16,7 @@ Copyright (C) 2023 ToraNova
 '''
 
 import re
-import lxml
+from lxml import etree
 from .errx_helper import (
         ensure_valid_attr,
         ensure_valid_value,
@@ -169,6 +169,9 @@ def format_paragraph(para, **kwargs):
 def format_figure(figobj, **kwargs):
     _optmap = ('width', 'height', 'border_width', 'border_color')
     ensure_valid_attr(_optmap, kwargs.keys())
+
+    clear_figure_format(figobj)
+
     set_figure_dims(figobj, kwargs.get('width'), kwargs.get('height'))
 
     bw = kwargs.get('border_width')
@@ -392,6 +395,18 @@ def set_figure_dims(figobj, width, height):
 
     figobj.width = width
 
+def clear_figure_format(figobj):
+
+    # clear figure border
+    inline = figobj._inline
+    spPr = inline.graphic.graphicData.pic.spPr
+    for aln in spPr.findall(qn('a:ln')):
+        spPr.remove(aln)
+
+    ext = inline.extent
+    for extEff in ext.findall(qn('wp:effectExtent')):
+        ext.remove(extEff)
+
 def set_figure_border(figobj, border_width='1.5pt', border_color='000000'):
 
     strw = str(parse_sizespec(border_width))
@@ -407,7 +422,6 @@ def set_figure_border(figobj, border_width='1.5pt', border_color='000000'):
     inline = figobj._inline
     spPr = inline.graphic.graphicData.pic.spPr
     spPr.append(aln)
-
 
     extEff = OxmlElement('wp:effectExtent')
     extEff.set('l', strw)
@@ -433,7 +447,7 @@ def set_updatefields(docx, val="true"):
     # https://github.com/elapouya/python-docx-template/issues/151#issuecomment-442722594
     namespace = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
     # add child to doc.settings element
-    element_updatefields = lxml.etree.SubElement(
+    element_updatefields = etree.SubElement(
         docx.settings.element, f"{namespace}updateFields"
     )
     element_updatefields.set(f"{namespace}val", val)

@@ -2,8 +2,8 @@
 
 | FOO | BAR |
 |---|---|
-| foo | ![](samples/teh_tarik.png) |
-| baz | <img width=2in>![](samples/teh_tarik.png)</img> |
+| foo | asd |
+| baz | ghi |
 
 Another table comes after, with its own column width definitions
 
@@ -14,3 +14,13 @@ Another table comes after, with its own column width definitions
 | foo | asd |
 | baz | ghi |
 </table>
+
+# Images
+
+This image uses default (black border, img default width)
+
+![](samples/teh_tarik.png)
+
+This image uses overriden formatting (no border, 2 inch width)
+
+<img width=2in>![](samples/teh_tarik.png)</img>
