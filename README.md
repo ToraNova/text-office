@@ -55,7 +55,7 @@ This tool supports use of formatting styles, image width adjustments, fonts etc.
 Now supports default figure/table formatting via docx_opts
 
 ```bash
-text-office.py in.md -o out.docx -dxopt default_figure_width=3in,default_figure_border_width=1pt,default_table_style=TableGrid
+text-office.py in.md -o out.docx -dxopt default_figure_width=3in -dxopt default_figure_border_width=1pt -dxopt 'default_table_style=Table Grid'
 ```
 
 ## License

@@ -196,14 +196,19 @@ def format_table(table, **kwargs):
         ensure_and_set(k, *v)
 
     colwidths = kwargs.get('column_widths')
+    cwidths=[]
     if isinstance(colwidths, str):
-        cwidths=[]
         for cr in colwidths.split(','):
             cwidths.append(parse_sizespec(cr.strip()))
 
+    if len(table.columns) >= len(cwidths):
+        # if the number cwidths is defined equal or greater to the number of columns
+        # then we apply the cwidth manipulation
         table.autofit = False
         for r in table.rows:
+            # apply for every row
             for idx, cell in enumerate(r.cells):
+                # apply for every cell in row
                 if idx < len(cwidths):
                     cell.width = cwidths[idx]
 

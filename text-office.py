@@ -45,7 +45,7 @@ parser.add_argument('--nosort', help='do not sort input naturally', action='stor
 parser.add_argument('-op', '--operation', help=f'type of operation to do: ({md.OPNAME}), {JOIN_OP}, {LIST_OP}, {MKTP_OP}, {LSTY_OP}, {MERG_OP}', type=str, default='generate')
 parser.add_argument('-o', '--output', help='output docx path', type=str, default='output.docx')
 parser.add_argument('-t', '--template', help='template docx path', type=str)
-parser.add_argument('-dxopt', '--docx_opts', help='key-value pair of docx options (e.g., caption_prefix_heading=1, prompt_updatefield=no)', type=str)
+parser.add_argument('-dxopt', '--docx_opts', action='append', help='key-value pair of docx options (e.g., caption_prefix_heading=1, prompt_updatefield=no)')
 parser.add_argument('--rel_root', help='relative root (for images, attachments)', type=str)
 parser.add_argument('--version', help='show version number', action='store_true')
 args = parser.parse_args()
@@ -142,8 +142,11 @@ else:
         exit(1)
 
     docx_opts = {}
-    if args.docx_opts is not None:
-        docx_opts = utils.parse_kv_pairs(args.docx_opts)
+    if args.docx_opts:
+        for opt in args.docx_opts:
+            k, v = opt.split('=')
+            utils.log.debug('dxopt: %s = %s' % (k, v))
+            docx_opts[k] = v
 
     # generate
     docx = _module.docx_generate(

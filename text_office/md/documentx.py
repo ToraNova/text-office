@@ -396,12 +396,16 @@ class Renderer(BaseRenderer):
             row.is_header = False
             self.render(row)
 
+        if len(tbltar.rows) < 1:
+            # table has no rows, warn
+            utils.log.warn('table has no rows')
+
         # default table configuration via dxopt
         _dxopt = utils.parse_default_args(['style', 'align', 'autofit', 'column_widths'], self.docx_opts, 'default_table_')
 
         if _dxopt:
             # default format
-            format_table(self.tables[-1], **_dxopt)
+            format_table(tbltar, **_dxopt)
 
         self.auto_left_indent(tbltar)
 
